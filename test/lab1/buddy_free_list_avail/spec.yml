@@ -1,0 +1,4 @@
+name: Buddy Allocator - Check Free List Availability
+description: Checks the number of free pages available in both base memory and high memory
+
+required: true

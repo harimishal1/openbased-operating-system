@@ -1,0 +1,4 @@
+name: Buddy Allocator - Allocate Zeroed
+description: Tests that the ALLOC_ZERO flag functions properly
+
+required: true

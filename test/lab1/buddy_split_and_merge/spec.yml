@@ -1,0 +1,8 @@
+name: Buddy Allocator - Split and Merge
+description: Test splitting a large chunk by allocating a smaller chunk, then merging again after free
+
+required: true
+
+matchlines:
+  - "[TESTS] Tested split and merge for normal pages"
+  - "[TESTS] Tested split and merge for huge pages"

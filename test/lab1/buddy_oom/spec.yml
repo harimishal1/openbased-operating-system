@@ -1,0 +1,2 @@
+name: Buddy Allocator - Out of Memory
+description: Test the OOM behaviour of the buddy allocator by allocating more than available memory

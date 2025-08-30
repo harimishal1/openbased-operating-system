@@ -1,0 +1,3 @@
+name: Buddy Allocator - Stress Test
+description: Performs a stress test on the buddy allocator, while
+  checking intermediate consistency

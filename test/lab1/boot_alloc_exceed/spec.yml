@@ -1,0 +1,8 @@
+name: Boot Allocator - Exceeding Memory
+description: Uses the boot allocator until memory exhaustion, which should panic
+
+matchlines:
+  - '[TEST] Allocating memory from boot allocator until exhaustion'
+  - '[TEST] Allocating memory beyond exhaustion, this should panic'
+
+should_panic: true

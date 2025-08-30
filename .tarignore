@@ -1,0 +1,4 @@
+.git
+./test
+*.tar
+*.code-workspace
