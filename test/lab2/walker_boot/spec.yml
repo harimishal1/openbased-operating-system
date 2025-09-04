@@ -1,0 +1,21 @@
+name: Page Walker - Dump the boot page tables
+description: This tests the basic functionality of the page walker by dumping
+  the boot-time page tables a a number of times with various parameters.
+
+required: true
+
+matchlines:
+  - "[TEST] Dumping all pages"
+  - "  0x0000000000000000 - 0x00000000007fffff [rwx- 2M]"
+  - "  0xffff800000000000 - 0xffff8000007fffff [rwx- 2M]"
+  - "[TEST] Dumping no pages"
+  - "[TEST] Dumping a single page"
+  - "  0xffff800000200000 - 0xffff8000003fffff [rwx- 2M]"
+  - "[TEST] Dumping a single huge page"
+  - "  0xffff800000200000 - 0xffff8000003fffff [rwx- 2M]"
+  - "[TEST] Dumping two huge pages"
+  - "  0xffff800000400000 - 0xffff8000005fffff [rwx- 2M]"
+
+# Do not accept any more output lines than what is included above
+noregexlines:
+  - "0x.{16} - 0x.{16} \\[.*\\]"

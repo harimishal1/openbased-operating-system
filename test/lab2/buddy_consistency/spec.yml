@@ -1,0 +1,12 @@
+name: Buddy Allocator - Consistency
+description: Tests the consistency of all max-order pages in the buddy allocator
+
+required: true
+
+---
+# Also test with extra memory
+name: (1GiB)
+qemu: -m 1G
+---
+name: (1523M)
+qemu: -m 1523M

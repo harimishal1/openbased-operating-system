@@ -1,0 +1,4 @@
+name: Paging - Check NX Bit
+description: Ensures that the No eXecute bit is enabled
+
+required: true

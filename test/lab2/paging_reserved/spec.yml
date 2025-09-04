@@ -1,0 +1,9 @@
+name: Paging - Check Reserved Bits
+description: Ensures for all page table entries that none of the reserved bits are set
+
+required: true
+
+---
+
+name: (1523M)
+qemu: -m 1523M

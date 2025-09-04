@@ -62,6 +62,7 @@
 			"mcu-debug.memory-view",
 			"whatwewant.open-terminal",
 			"redhat.vscode-yaml",
+			"xaver.clang-format",
 		]
 	},
 

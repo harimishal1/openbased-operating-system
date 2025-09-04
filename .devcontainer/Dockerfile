@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y \
 	# OpenLSD dependencies
 	bear build-essential make python3 python-is-python3 python3-pip qemu-system unifdef \
 	# LLVM
-	clang clangd llvm lld gdb
+	clang clangd llvm lld gdb clang-format
 
 # Install Python packages
 RUN pip install click==8.2.1 mashumaro==3.16 rich==14.0.0 --break-system-packages

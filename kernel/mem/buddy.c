@@ -177,3 +177,92 @@ void page_decref(struct page_info *pp)
 	}
 }
 
+static int in_page_range(void *p)
+{
+	return ((uintptr_t)pages <= (uintptr_t)p &&
+	        (uintptr_t)p < (uintptr_t)(pages + npages));
+}
+
+static void *update_ptr(void *p)
+{
+	if (!in_page_range(p))
+		return p;
+
+	return (void *)((uintptr_t)p + KPAGES - (uintptr_t)pages);
+}
+
+void buddy_migrate(void)
+{
+	struct page_info *page;
+	struct list *node;
+	size_t i;
+
+	for (i = 0; i < npages; ++i) {
+		page = pages + i;
+		node = &page->pp_node;
+
+		node->next = update_ptr(node->next);
+		node->prev = update_ptr(node->prev);
+	}
+
+	for (i = 0; i < BUDDY_MAX_ORDER; ++i) {
+		node = buddy_free_list + i;
+
+		node->next = update_ptr(node->next);
+		node->prev = update_ptr(node->prev);
+	}
+
+	pages = (struct page_info *)KPAGES;
+}
+
+/**
+ * Increase the range of pages managed by our kernel in the pages[] array. This
+ * method will increase npages by chunks of size <the number of pages in a
+ * max_order page>.
+ *
+ * This method expects a size parameter representing the requested minimum size
+ * of npages. npages is then increased to the first multiple of the chunk size
+ * strictly larger than size, so that pages[size] is a valid page.
+ */
+int buddy_grow(struct page_table *pml4, size_t size)
+{
+	// We grow the page scope of the buddy allocator by an entire MAX_ORDER
+	// worth of pages every time. Compute how many pages this corresponds to,
+	// and how many pages are needed to store that many page_info structs.
+	size_t increment_structs = (1 << (12 + BUDDY_MAX_ORDER - 1)) / PAGE_SIZE;
+	size_t increment_pages = ROUNDUP(increment_structs * sizeof(struct page_info), PAGE_SIZE) / PAGE_SIZE;
+
+	// Continuously grow the buddy allocator while the current size is less
+	// than the requested size.
+	while(npages <= size) {
+		struct page_info *pages_end = pages + npages;
+
+		// Allocate pages for the new structs
+		for (size_t i = 0; i < increment_pages; i++) {
+			struct page_info *page = page_alloc(ALLOC_ZERO);
+			if (!page)
+				return -1; // We ran out of memory
+
+			// Ensure the page is mapped in the correct location: after the
+			// existing pages array
+			int ret = page_insert(pml4, page, (char *) pages_end + i * PAGE_SIZE,
+			    PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+			if (ret < 0)
+				return ret;
+		}
+
+		// Initialise newly allocated page_info structs. Crucially, we do NOT
+		// hand these new pages to the buddy allocator through page_free, since
+		// we cannot know whether they are actually free or available. This is
+		// the job of page_init_ext().
+		for(size_t i = 0; i < increment_structs; i++) {
+			struct page_info *info = pages_end + i;
+			list_init(&info->pp_node);
+		}
+
+		// Update npages size
+		npages += increment_structs;
+	}
+
+	return 0;
+}

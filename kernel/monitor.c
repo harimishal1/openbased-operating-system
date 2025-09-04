@@ -31,6 +31,7 @@ static struct command commands[] = {
 	{ "pageinfo", "Display page information for a given page index", mon_pageinfo },
 	{ "mmapinfo", "Display the boot-time mmap information", mon_mmapinfo },
     { "quit", "Quit the kernel and shutdown QEMU", mon_quit },
+	{ "ptdump", "Display the page tables", mon_ptdump },
 };
 
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
@@ -168,6 +169,10 @@ int mon_quit(int argc, char **argv, struct int_frame *frame)
 	return 0;
 }
 
+int mon_ptdump(int argc, char **argv, struct int_frame *frame)
+{
+	return dump_page_tables(kernel_pml4, PAGE_HUGE);
+}
 
 
 /***** Kernel monitor command interpreter *****/

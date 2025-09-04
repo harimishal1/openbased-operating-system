@@ -1,0 +1,26 @@
+name: Paging - Full Write
+description: Allocates, maps, and then writes to all free pages in the system.
+
+regexlines:
+  - "0x0000000000000000 - 0x0000000007bfffff \\[rwx- 2M\\]"
+  - "0x0000000007c00000 - 0x0000000007...fff \\[rwx- 4K\\]"
+
+---
+
+name: (1GiB)
+qemu: -m 1G
+timeout: 60
+
+regexlines:
+  - "0x0000000000000000 - 0x000000003f3fffff \\[rwx- 2M\\]"
+  - "0x000000003f400000 - 0x000000003f...fff \\[rwx- 4K\\]"
+
+---
+
+name: (1234MiB)
+qemu: -m 1234M
+timeout: 90
+
+regexlines:
+  - "0x0000000000000000 - 0x000000004c3fffff \\[rwx- 2M\\]"
+  - "0x000000004c400000 - 0x000000004....fff \\[rwx- 4K\\]"

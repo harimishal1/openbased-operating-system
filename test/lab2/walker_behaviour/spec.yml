@@ -1,0 +1,3 @@
+name: Page Walker - Walking Behaviour
+description: This tests the correct walking/visiting behaviour of
+  the page table walker.
