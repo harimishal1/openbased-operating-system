@@ -5,8 +5,8 @@
 
 #include <kernel/mem.h>
 
-#define DOUBLE_FREE_DETECTION
-#define INVALID_FREE_DETECTION
+// #define DOUBLE_FREE_DETECTION
+// #define INVALID_FREE_DETECTION
 
 /* Physical page metadata. */
 size_t npages;

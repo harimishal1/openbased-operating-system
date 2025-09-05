@@ -38,8 +38,8 @@ TEST_PARALLEL = 1
 # your codebase.
 #
 # This property is case-sensitive! Make sure to capitalize all items.
-#BONUS = FOO BAR
-BONUS = DOUBLE_FREE_DETECTION INVALID_FREE_DETECTION
+# #BONUS = FOO BAR
+# BONUS = DOUBLE_FREE_DETECTION INVALID_FREE_DETECTION
 
 # This setting sets the number of cores available to OpenLSD. When
 # not provided, the default is 1. Changing this is only relevant

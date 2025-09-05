@@ -18,4 +18,4 @@ LAB=1
 # "make test-all" or when submitting to Themis. Each of the bonus
 # features will be tested separately, in isolation, to prevent
 # interference between bonus features.
-BONUSES = DOUBLE_FREE_DETECTION INVALID_FREE_DETECTION
+# BONUSES = DOUBLE_FREE_DETECTION INVALID_FREE_DETECTION
