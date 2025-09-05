@@ -1,0 +1,7 @@
+name: Buddy Allocator - Double Free
+description: Tests whether the kernel panics on double free
+
+matchlines:
+  - 'first free is ok'
+
+should_panic: true

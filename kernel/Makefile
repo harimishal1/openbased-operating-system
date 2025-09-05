@@ -3,9 +3,9 @@
 # This is NOT a complete makefile;
 # you must run GNU make in the top-level directory
 # where the GNUmakefile is located.
-#
-BONUSDEFINE += -DOUBLEFREE_DETECTION
-BONUSDEFINE += -INVALID_FREE_DETECTION
+# #
+# BONUSDEFINE += -DOUBLE_FREE_DETECTION
+# BONUSDEFINE += -INVALID_FREE_DETECTION
 
 OBJDIRS += kernel
 
@@ -26,7 +26,8 @@ KERNEL_BINFILES := $(patsubst %, $(OBJDIR)/%, $(KERNEL_BINFILES))
 $(OBJDIR)/kernel/%.o: kernel/%.c $(OBJDIR)/.vars.KERNEL_CFLAGS
 	@echo + cc $<
 	@mkdir -p $(@D)
-	$(V)$(CC) $(BONUSDEFINE) $(KERNEL_CFLAGS) $(CC_IO) $(CC_DEPS)
+# 	$(V)$(CC) $(BONUSDEFINE) $(KERNEL_CFLAGS) $(CC_IO) $(CC_DEPS)
+	$(V)$(CC) $(KERNEL_CFLAGS) $(CC_IO) $(CC_DEPS)
 
 $(OBJDIR)/kernel/%.o: kernel/%.S $(OBJDIR)/.vars.KERNEL_CFLAGS
 	@echo + as $<

@@ -5,6 +5,9 @@
 
 #include <kernel/mem.h>
 
+#define DOUBLE_FREE_DETECTION
+#define INVALID_FREE_DETECTION
+
 /* Physical page metadata. */
 size_t npages;
 struct page_info *pages;
@@ -241,7 +244,7 @@ void page_free(struct page_info *pp)
 {	
 	/* LAB 1: your code here. */
 	//double free detection
-	#ifdef DOUBLEFREE_DETECTION
+	#ifdef DOUBLE_FREE_DETECTION
 	assert(pp->pp_avail == 1);   
     assert(pp->pp_ref == 0); 
 	if(pp->pp_free == 1){

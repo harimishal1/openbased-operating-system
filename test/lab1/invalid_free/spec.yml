@@ -1,0 +1,4 @@
+name: Buddy Allocator - Invalid Free
+description: Tests whether the kernel panics on free of an invalid pointer
+
+should_panic: true
