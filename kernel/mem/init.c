@@ -52,7 +52,7 @@ void mem_init(struct boot_info *boot_info)
 	npages = MIN(BOOT_MAP_LIM, highest_addr) / PAGE_SIZE;
 
 	/* Remove this line when you're ready to test this function. */
-	panic("mem_init: This function is not finished\n");
+	//panic("mem_init: This function is not finished\n");
 
 	/*
 	 * Allocate an array of npages 'struct page_info's and store it in 'pages'.
@@ -96,6 +96,11 @@ void page_init(struct boot_info *boot_info)
 	 */
 	for (i = 0; i < npages; ++i) {
 		/* LAB 1: your code here. */
+		list_init(&pages[i].pp_node);
+		pages[i].pp_ref = 0;
+		pages[i].pp_free = 0;
+		pages[i].pp_order = 0;
+		pages[i].pp_avail = 0;
 	}
 
 	/* Go through the pages reserved for use by the buddy allocator itself,
@@ -103,8 +108,18 @@ void page_init(struct boot_info *boot_info)
 	 * in use by setting pp_ref to one.
 	 * Hint: these pages are in the range [pages, pages + (npages * sizeof *pages))
 	 */
-	
+
 	/* LAB 1: your code here */
+	physaddr_t reserved_start_pa = page2pa(pages);
+    physaddr_t reserved_end_pa = page2pa(pages) + (npages * sizeof *pages);
+    for (i = 0; i < npages; ++i) {
+        page = &pages[i];
+        physaddr_t current_pa = page2pa(page);
+        if (current_pa >= reserved_start_pa && current_pa < reserved_end_pa) {
+            page->pp_ref = 1;
+			page->pp_avail = 1;
+        }
+    }
 
 	/* Go through the pages reserved for VGA memory (for use in the console),
 	 * and mark all of them to be available.
@@ -131,8 +146,29 @@ void page_init(struct boot_info *boot_info)
 	entry = (struct mmap_entry *)KADDR(boot_info->mmap_addr);
 	end = PADDR(boot_alloc(0));
 
-	for (i = 0; i < boot_info->mmap_len; ++i, ++entry) {
+    for (i = 0; i < boot_info->mmap_len; ++i, ++entry) {
 		/* LAB 1: your code here. */
-	}
+        if (entry->type != MMAP_FREE) {
+            continue;
+        }
+        for (pa = entry->addr; pa < entry->addr + entry->len; pa += PAGE_SIZE) {
+            if (pa >= BOOT_MAP_LIM) {
+                break;
+            }
+			if (pa == 0){
+				continue;
+			}
+			if (pa >= KERNEL_LMA && pa < end) {
+				continue;
+			}
+            if (pa >= PADDR(boot_info) && pa < PADDR(boot_info) + sizeof(*boot_info)) {
+                continue;
+            }
+            page = pa2page(pa);
+            page->pp_avail = 1;
+			if (page->pp_ref == 0) {
+                page_free(page);
+            }
+        }
+    }
 }
-

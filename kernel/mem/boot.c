@@ -38,7 +38,15 @@ void *boot_alloc(uint32_t n)
 	 *
 	 * LAB 1: your code here.
 	 */
-	return NULL;
+    if (n == 0) {
+        return next_free;
+    }
+    result = next_free;
+    next_free = ROUNDUP(result + n, PAGE_SIZE);
+	if (PADDR(next_free) > BOOT_MAP_LIM) {
+		panic("boot_alloc: exceeding memory\n");
+	}
+    return result;
 }
 
 /* The addresses and lengths in the memory map provided by the boot loader may
