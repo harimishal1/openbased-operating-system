@@ -5,3 +5,5 @@ matchlines:
   - 'first free is ok'
 
 should_panic: true
+
+bonus: DOUBLE_FREE_DETECTION
