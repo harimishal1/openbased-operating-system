@@ -138,7 +138,6 @@ struct page_info *buddy_merge(struct page_info *page)
 		if (buddy->pp_free == 0 || buddy->pp_order != page->pp_order) {
 			break;
 		}
-		//list_del(&page->pp_node);
 		list_del(&buddy->pp_node);
 		if (page > buddy) {
 			page = buddy;
@@ -221,7 +220,6 @@ struct page_info *page_alloc(int alloc_flags)
 void page_free(struct page_info *pp)
 {	
 	/* LAB 1: your code here. */
-	//pp->pp_free = 1;
    	pp = buddy_merge(pp);
 	pp->pp_free = 1;
 	list_add_tail(&buddy_free_list[pp->pp_order], &pp->pp_node);
