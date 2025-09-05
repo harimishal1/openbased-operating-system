@@ -158,7 +158,7 @@ void page_init(struct boot_info *boot_info)
 			if (pa == 0){
 				continue;
 			}
-			if (pa >= ROUNDUP(KERNEL_LMA, PAGE_SIZE) && pa < end) {
+			if (pa >= ROUNDDOWN(KERNEL_LMA, PAGE_SIZE) && pa < end) {
 				continue;
 			}
             if (pa >= ROUNDDOWN(PADDR(boot_info), PAGE_SIZE) && 
