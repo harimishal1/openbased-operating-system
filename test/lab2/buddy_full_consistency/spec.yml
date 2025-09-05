@@ -1,0 +1,12 @@
+name: Buddy Allocator - Full Consistency
+description: Thorough testing of buddy allocator consistency, also catching "holes" in the allocator
+
+---
+
+name: (1GiB)
+qemu: -m 1G
+timeout: 90
+---
+name: (1523M)
+qemu: -m 1523M
+timeout: 120

@@ -11,7 +11,7 @@
 
 # This is the current lab number. It will be updated in the
 # template for every next lab, so don't change it yourself.
-LAB=1
+LAB=2
 
 # This variable can be used to specify the set of bonus features
 # you have implemented in your kernel. This is used when running

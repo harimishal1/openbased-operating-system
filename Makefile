@@ -409,14 +409,8 @@ test:
 
 # Perform submission preflight checks to ensure that all the correct
 # files will be submitted:
-# - We should be on a sensible branch
 # - We should not have uncomitted or untracked files
 handin-check:
-	@if test "$$(git symbolic-ref HEAD)" != refs/heads/lab$(LAB); then \
-		git branch; \
-		read -p "You are not on the lab$(LAB) branch. Hand-in the current branch? [y/N] " r; \
-		test "$$r" = y; \
-	fi
 	@if ! git diff-files --quiet || ! git diff-index --quiet --cached HEAD; then \
 		git status; \
 		echo; \

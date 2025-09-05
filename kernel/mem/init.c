@@ -9,6 +9,76 @@
 
 extern struct list buddy_free_list[];
 
+/* The kernel's initial PML4. */
+struct page_table *kernel_pml4;
+
+/**
+ * This function sets up the initial PML4 for the kernel according to OpenLSD's
+ * kernel memory layout. In short, this function will map the following regions:
+ * - Anything from mmap regions in boot_info
+ * - Regions from the kernel ELF binary
+ * - The kernel stack
+ * - Page metadata (struct page_info)
+ * - Video memory
+ *
+ * Hint: this function will call various boot_map_ functions that you have to
+ * implement separately.
+ */
+int pml4_setup(struct boot_info *boot_info)
+{
+	struct page_info *page;
+
+	/* Allocate the kernel PML4. */
+	page = page_alloc(ALLOC_ZERO);
+
+	if (!page) {
+		panic("unable to allocate the PML4!");
+	}
+
+	kernel_pml4 = page2kva(page);
+
+	/* Map in all regions available to us according to the boot_info */
+	
+	/* LAB 2: your code here */
+
+	/* Correct page permissions according to the kernel ELF header, as
+	 * passed to us by boot_info
+	 */
+
+	/* LAB 2: your code here. */
+
+	/* Use the physical memory that 'bootstack' refers to as the kernel
+	 * stack. The kernel stack grows down from virtual address KSTACK_TOP.
+	 * Map 'bootstack' to [KSTACK_TOP - KSTACK_SIZE, KSTACK_TOP).
+	 */
+
+	/* LAB 2: your code here. */
+
+	 
+	/* Map in the metadata pages from the buddy allocator as RW-. */
+	
+	/* LAB 2: your code here. */
+	
+
+	/* Map in the video memory; range [IO_PHYS_MEM, EXT_PHYS_MEM) as RW- */
+	boot_map_region(kernel_pml4, (void *)(KERNEL_VMA + IO_PHYS_MEM), EXT_PHYS_MEM - IO_PHYS_MEM,
+	    IO_PHYS_MEM, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+
+	/* Migrate the struct page_info structs to the newly mapped area using
+	 * buddy_migrate().
+	 */
+
+	/* LAB 2: your code here. */
+
+
+	return 0;
+}
+
+// TODO improve this
+// This is a no-op method used to inject our PML4 validation
+// during testing.
+void validate_pml4() {}
+
 
 /*
  * Set up a four-level page table:
@@ -70,7 +140,22 @@ void mem_init(struct boot_info *boot_info)
 	 */
 	page_init(boot_info);
 
-	/* We will set up page tables here in lab 2. */
+	/* Setup the initial PML4 for the kernel. */
+	pml4_setup(boot_info);
+
+	/* Enable the NX-bit. */
+	/* LAB 2: your code here. */
+
+	// TODO improve this
+	// We cannot intercept load_pml4 since it is a static method, so there
+	// are multiple instances of it.
+	validate_pml4();
+
+	/* Load the kernel PML4. */
+	/* LAB 2: your code here. */
+
+	/* Add the rest of the physical memory to the buddy allocator. */
+	page_init_ext(boot_info);
 }
 
 
@@ -173,4 +258,36 @@ void page_init(struct boot_info *boot_info)
             }
         }
     }
+}
+/* Extend the buddy allocator by initializing the page structure and memory
+ * free list for the remaining available memory. This method assumes the
+ * available memory has already been mapped in the page tables.
+ *
+ * Hint: this method will call buddy_grow and page_free.
+ * Hint: look at the PAGE_INDEX macro
+ */
+void page_init_ext(struct boot_info *boot_info)
+{
+	struct page_info *page;
+	struct mmap_entry *entry;
+	uintptr_t pa, end;
+	size_t i;
+
+	entry = (struct mmap_entry *)KADDR(boot_info->mmap_addr);
+	end = PADDR(boot_alloc(0));
+
+	/* Go through the entries in the memory map:
+	 *  1) Ignore the entry if the region is not free memory.
+	 *  2) Iterate through the pages in the region.
+	 *  3) If the physical address is below BOOT_MAP_LIM, ignore
+	 *       - remember, these pages were already freed by page_init()!
+	 *  4) Ensure you do not run out of memory for the buddy allocator.
+	 *  5) Mark the page as being available.
+	 *  6) Hand the page to the buddy allocator by calling page_free().
+	 *
+	 * Tip: can you find a way to speed this up for large amounts of memory?
+	 */
+	for (i = 0; i < boot_info->mmap_len; ++i, ++entry) {
+		/* LAB 2: your code here. */
+	}
 }

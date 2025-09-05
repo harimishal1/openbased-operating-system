@@ -1,0 +1,2 @@
+name: Paging - Basic Huge Page Support
+description: Test allocation, insertion, lookup, and removal of a 2M huge page

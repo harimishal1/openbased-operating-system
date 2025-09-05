@@ -30,3 +30,4 @@ int mon_buddyinfo(int argc, char **argv, struct int_frame *frame);
 int mon_pageinfo(int argc, char **argv, struct int_frame *frame);
 int mon_mmapinfo(int argc, char **argv, struct int_frame *frame);
 int mon_quit(int argc, char **argv, struct int_frame *frame);
+int mon_ptdump(int argc, char **argv, struct int_frame *frame);

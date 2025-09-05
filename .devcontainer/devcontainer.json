@@ -24,7 +24,8 @@
 				"rioj7.command-variable",
 				"mcu-debug.memory-view",
 				"whatwewant.open-terminal",
-				"redhat.vscode-yaml"
+				"redhat.vscode-yaml",
+				"xaver.clang-format"
 			]
 		},
 		"jetbrains" : {

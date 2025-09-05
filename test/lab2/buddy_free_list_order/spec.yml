@@ -1,0 +1,13 @@
+name: Buddy Allocator - Free List Orders
+description: Checks if the order of the free pages on the free list for the respective order matches
+
+required: true
+
+---
+
+name: (2GiB)
+qemu: -m 2G
+
+---
+name: (1523M)
+qemu: -m 1523M
