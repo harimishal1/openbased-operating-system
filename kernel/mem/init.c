@@ -166,23 +166,6 @@ void page_init(struct boot_info *boot_info)
 				page->pp_avail = 1;
 				continue;
 			}
-			/* if (pa >= ROUNDDOWN(KERNEL_LMA, PAGE_SIZE) && pa < end) {
-				page = pa2page(pa);
-				page->pp_avail = 1;
-				continue;
-			}
-            if (pa >= ROUNDDOWN(PADDR(boot_info), PAGE_SIZE) && 
-				pa < ROUNDUP(PADDR(boot_info) + sizeof(*boot_info), PAGE_SIZE)) {
-				page = pa2page(pa);
-				page->pp_avail = 1;
-                continue;
-            }
-			if (pa >= ROUNDDOWN((physaddr_t)(boot_info->elf_hdr), PAGE_SIZE)
-				&& pa < ROUNDUP((physaddr_t)(boot_info->elf_hdr + sizeof(*boot_info->elf_hdr)),PAGE_SIZE)){
-				page = pa2page(pa);
-				page->pp_avail = 1;
-				continue;
-			}  */
             page = pa2page(pa);
             page->pp_avail = 1;
 			if (page->pp_ref == 0) {

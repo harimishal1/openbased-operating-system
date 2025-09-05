@@ -16,6 +16,21 @@ struct page_info *pages;
  */
 struct list buddy_free_list[BUDDY_MAX_ORDER];
 
+/*detects invalid free by marking interior pages of a higher order chunk as unavailable
+ */
+
+#define ORDER_SENTINEL 0x3F  // invalid as a real order
+
+static inline void mark_interior_on_alloc(struct page_info *head, size_t order) {
+    if (order == 0) return;
+    size_t idx = (size_t)(head - pages);
+    size_t n   = (size_t)1 << order;
+    for (size_t i = 1; i < n; i++) {
+        struct page_info *p = &pages[idx + i];
+        p->pp_order = ORDER_SENTINEL;   
+        p->pp_free  = 0;                
+    }
+}
 
 /* Counts the number of free pages for the given order.
  */
@@ -199,10 +214,11 @@ struct page_info *page_alloc(int alloc_flags)
         return NULL;
 
     struct page_info *page = buddy_find(req_order);
-    if (!page)
-        return NULL; 
+    if (!page) return NULL; 
 
-    if (alloc_flags & ALLOC_ZERO) { 
+	mark_interior_on_alloc(page, req_order); //we check for higher order chunk free here
+    
+	if (alloc_flags & ALLOC_ZERO) { 
         size_t bytes = (size_t)1ULL << (PAGE_TABLE_SHIFT + req_order);
         memset(page2kva(page), 0, bytes);
     }
@@ -220,6 +236,21 @@ struct page_info *page_alloc(int alloc_flags)
 void page_free(struct page_info *pp)
 {	
 	/* LAB 1: your code here. */
+	//double free detection
+	assert(pp->pp_avail == 1);   
+    assert(pp->pp_ref == 0); 
+	if(pp->pp_free == 1){
+		panic("Double free detected");
+	}	
+	pp->pp_free = 0;
+	//double free detection
+
+	//invalid free detection
+	if (pp->pp_order == ORDER_SENTINEL){
+		panic("invalid free: interior (non-head) page");
+	}
+	//invalid free detection
+
    	pp = buddy_merge(pp);
 	pp->pp_free = 1;
 	list_add_tail(&buddy_free_list[pp->pp_order], &pp->pp_node);
