@@ -158,12 +158,18 @@ void page_init(struct boot_info *boot_info)
 			if (pa == 0){
 				continue;
 			}
-			if (pa >= KERNEL_LMA && pa < end) {
+			if (pa >= ROUNDUP(KERNEL_LMA, PAGE_SIZE) && pa < end) {
 				continue;
 			}
-            if (pa >= PADDR(boot_info) && pa < PADDR(boot_info) + sizeof(*boot_info)) {
+            if (pa >= ROUNDDOWN(PADDR(boot_info), PAGE_SIZE) && 
+				pa < ROUNDUP(PADDR(boot_info) + sizeof(*boot_info), PAGE_SIZE)) {
                 continue;
             }
+			//not aligned at
+			/* if (pa >= ROUNDUP(PADDR(boot_info->elf_hdr),PAGE_SIZE) && 
+			pa < ROUNDUP(PADDR(boot_info->elf_hdr) + sizeof(boot_info->elf_hdr),PAGE_SIZE)) {
+				continue;
+			} */
             page = pa2page(pa);
             page->pp_avail = 1;
 			if (page->pp_ref == 0) {
