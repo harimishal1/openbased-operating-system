@@ -1,3 +1,4 @@
+#include "x86-64/paging.h"
 #include <types.h>
 #include <paging.h>
 
@@ -68,25 +69,32 @@ static int ptbl_walk_range(struct page_table *ptbl, uintptr_t base,
     uintptr_t end, struct page_walker *walker)
 {
 	/* LAB 2: your code here. */
-		for(; base <= end; base+=PAGE_SIZE) {
-
-		uintptr_t page_end = ptbl_end(base);
-		uintptr_t next = page_end + 1;
+	base = ptbl_start(base);
+	end = ptbl_end(end);	
+	for(; base < end;) {
+		
+		uintptr_t next = ptbl_end(base) + 1;
 		physaddr_t *entry = &ptbl->entries[PAGE_TABLE_INDEX(base)];
 
 		if (*entry & PAGE_PRESENT) {
 			if (walker->pte_callback) {
-				int r = walker->pte_callback(entry, base, next < end ? next : end, walker);
+				int r = walker->pte_callback(entry, base, end, walker);
 				if (r < 0)
 					return r;
 			}
 		} else {
 			if (walker->pt_hole_callback) {
-				int r = walker->pt_hole_callback(base, next < end ? next : end, walker);
+				int r = walker->pt_hole_callback(base, end, walker);
+				if (r < 0)
+					return r;
+			}
+			if(walker->pte_unmap) {
+				int r = walker->pte_unmap(entry, base, end, walker);
 				if (r < 0)
 					return r;
 			}
 		}
+		base = next;
 	}
 	return 0;
 }
@@ -107,6 +115,41 @@ static int pdir_walk_range(struct page_table *pdir, uintptr_t base,
     uintptr_t end, struct page_walker *walker)
 {
 	/* LAB 2: your code here. */
+	base = pdir_start(base);
+
+	for(; base < end; ) {
+
+		uintptr_t next = pdir_end(base) + 1;
+		if (next > end) next = end;
+		physaddr_t *entry = &pdir->entries[PAGE_DIR_INDEX(base)];
+
+		if (*entry & PAGE_PRESENT) {
+			if (*entry & PAGE_SIZE) {
+				if (walker->pde_callback) {
+					int r = walker->pde_callback(entry, base, pdir_end(base), walker);
+					if (r < 0)
+						return r;
+				}
+			} else {
+				struct page_table *ptbl = (struct page_table *)KADDR(PAGE_ADDR(*entry)); 
+				int r = ptbl_walk_range(ptbl, base, pdir_end(base), walker);
+				if (r < 0)
+					return r;
+				if (walker->pde_unmap) {
+					r = walker->pde_unmap(entry, base, pdir_end(base), walker);
+					if (r < 0)
+						return r;
+				}
+			}
+		} else {
+			if (walker->pt_hole_callback) {
+				int r = walker->pt_hole_callback(base, next < end ? next : end, walker);
+				if (r < 0)
+					return r;
+			}
+		}
+		base = next;
+	}
 	return 0;
 }
 
