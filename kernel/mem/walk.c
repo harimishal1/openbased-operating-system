@@ -1,4 +1,3 @@
-
 #include <types.h>
 #include <paging.h>
 
@@ -69,6 +68,26 @@ static int ptbl_walk_range(struct page_table *ptbl, uintptr_t base,
     uintptr_t end, struct page_walker *walker)
 {
 	/* LAB 2: your code here. */
+		for(; base <= end; base+=PAGE_SIZE) {
+
+		uintptr_t page_end = ptbl_end(base);
+		uintptr_t next = page_end + 1;
+		physaddr_t *entry = &ptbl->entries[PAGE_TABLE_INDEX(base)];
+
+		if (*entry & PAGE_PRESENT) {
+			if (walker->pte_callback) {
+				int r = walker->pte_callback(entry, base, next < end ? next : end, walker);
+				if (r < 0)
+					return r;
+			}
+		} else {
+			if (walker->pt_hole_callback) {
+				int r = walker->pt_hole_callback(base, next < end ? next : end, walker);
+				if (r < 0)
+					return r;
+			}
+		}
+	}
 	return 0;
 }
 

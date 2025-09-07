@@ -1,4 +1,3 @@
-
 #include <types.h>
 #include <paging.h>
 
@@ -16,6 +15,7 @@ static int lookup_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 {
 	struct lookup_info *info = walker->udata;
 
+	//cprintf("lookup_pte: base %p end %p\n the ppn is: %lx", (void *)base, (void *)end, entry ? *entry >> 12 : 0);
 	/* LAB 2: your code here. */
 	return 0;
 }
