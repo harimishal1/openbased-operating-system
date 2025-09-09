@@ -92,6 +92,9 @@ static int ptbl_walk_range(struct page_table *ptbl, uintptr_t base,
 					return r;
 			}
 		}
+		if (next == 0) {
+			return 0;
+		}
 		base = next;
 	}
 	return 0;
@@ -152,6 +155,9 @@ static int pdir_walk_range(struct page_table *pdir, uintptr_t base,
 					return r;
 			}
 		}
+		if (next == 0) {
+			return 0;
+		}
 		base = next;
 	}
 	return 0;
@@ -204,6 +210,9 @@ static int pdpt_walk_range(struct page_table *pdpt, uintptr_t base,
 					return r;
 			}
 		}
+		if (next == 0) {
+			return 0;
+		}
 		base = next;
 	}
 	return 0;
@@ -255,6 +264,9 @@ static int pml4_walk_range(struct page_table *pml4, uintptr_t base, uintptr_t en
 				if (r < 0)
 					return r;
 			}
+		}
+		if (next == 0) {
+			return 0;
 		}
 		base = next;
 	}
