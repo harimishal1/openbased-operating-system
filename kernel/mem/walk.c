@@ -131,7 +131,7 @@ static int pdir_walk_range(struct page_table *pdir, uintptr_t base,
 		}
 
 		if (*entry & PAGE_PRESENT) {
-			if (*entry & PAGE_SIZE) {
+			if (*entry & PAGE_HUGE) {
 				if (walker->pde_unmap) {
 					int r = walker->pde_unmap(entry, pdir_start(base), pdir_end(base), walker);
 					if (r < 0)
