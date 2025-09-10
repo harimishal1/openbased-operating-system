@@ -22,6 +22,15 @@ static int insert_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct page_info *page;
 
 	/* LAB 2: your code here. */
+	if (*entry & PAGE_PRESENT) {
+		page_decref(pa2page(PAGE_ADDR(*entry)));
+		*entry = 0;
+		tlb_invalidate(info->pml4, (void *)base);
+	}
+	page = info->page;
+	page->pp_ref++;
+	page->pp_free = 0;
+	*entry = page2pa(page) | (info->flags);
 	return 0;
 }
 
@@ -39,8 +48,81 @@ static int insert_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct page_info *page;
 
 	/* LAB 2: your code here. */
+	if (*entry & PAGE_PRESENT) {
+		if (*entry & PAGE_HUGE) {
+			page_decref(pa2page(PAGE_ADDR(*entry)));
+			tlb_invalidate(info->pml4, (void *)base);
+
+			if (info->flags & PAGE_HUGE) {
+				page = info->page;
+				page->pp_ref++;
+				*entry = page2pa(page) | (info->flags);
+			} else {
+				int r = ptbl_alloc(entry, base, end, walker);
+				if (r < 0) {
+					return r;
+				}
+			}
+		}
+	} else {
+		if (info->flags & PAGE_HUGE) {
+			page = info->page;
+			page->pp_ref++;
+			*entry = page2pa(page) | (info->flags);
+		} else {
+			int r = ptbl_alloc(entry, base, end, walker);
+			if (r < 0) {
+				return r;
+			}
+		}
+	}
 	return 0;
 }
+
+static int insert_pdpte(physaddr_t *entry, uintptr_t base, uintptr_t end,
+	struct page_walker *walker)
+{
+	struct insert_info *info = walker->udata;
+
+	if (!(*entry & PAGE_PRESENT)) {
+		int r = ptbl_alloc(entry, base, end, walker);
+		if (r < 0) {
+			return r;
+		}
+	}
+	return 0;
+}
+
+static int insert_pml4e(physaddr_t *entry, uintptr_t base, uintptr_t end,
+	struct page_walker *walker)
+{
+	struct insert_info *info = walker->udata;
+
+	if (!(*entry & PAGE_PRESENT)) {
+		int r = ptbl_alloc(entry, base, end, walker);
+		if (r < 0) {
+			return r;
+		}
+	}
+	return 0;
+}
+
+// static int insert_hole(uintptr_t base, uintptr_t end,
+// 	struct page_walker *walker)
+// {
+// 	struct insert_info *info = walker->udata;
+// 	struct page_info *page;
+
+// 	if(end - base == PAGE_SIZE - 1) { // case unmapped page
+// 	} else if(end - base == PAGE_TABLE_SPAN - 1) { // case unmapped page table
+// 	} else if(end - base == PAGE_DIR_SPAN - 1) { // case unmapped page directory
+// 	} else if(end - base == PDPT_SPAN - 1) { // case unmapped PDPT
+// 	} else {
+// 		panic("Invalid hole size!");
+// 	}
+
+// 	return 0;
+// }
 
 
 /* Map the physical page page at virtual address va. The flags argument
@@ -77,12 +159,23 @@ int page_insert(struct page_table *pml4, struct page_info *page, void *va,
 		.pte_callback = insert_pte,
 		.pde_callback = insert_pde,
 		/* LAB 2: your code here. */
+		.pdpte_callback = insert_pdpte,
+		.pml4e_callback = insert_pml4e,
+		// .pt_hole_callback = insert_hole,
 		.udata = &info,
 	};
 
 	/* LAB 2: your code here. */
+	info.pml4 = pml4;
+	info.page = page;
+	info.flags = flags | PAGE_PRESENT;
+	int size = (flags & PAGE_SIZE) ? PAGE_DIR_SPAN : PAGE_SIZE;
+	if (walk_page_range(pml4, va, (void *)((uintptr_t)va + size), &walker) < 0) {
+		return -1;
+	}
+	return 0;
 
 	// Hint: use the walker as follows
 	// walk_page_range(pml4, va, (void *)((uintptr_t)va + PAGE_SIZE), &walker);
-	return -1;
+	// return -1;
 }

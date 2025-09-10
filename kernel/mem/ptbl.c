@@ -15,6 +15,15 @@ int ptbl_alloc(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
 {
 	/* LAB 2: your code here. */
+	if (*entry & PAGE_PRESENT) {
+		return 0;
+	}
+	struct page_info *page = page_alloc(ALLOC_ZERO);
+	if (!page) {
+		return -1;
+	}
+	page->pp_ref++;
+	*entry = page2pa(page) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
 	return 0;
 }
 
