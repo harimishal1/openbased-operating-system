@@ -1,3 +1,6 @@
+#include "kernel/mem/buddy.h"
+#include "x86-64/paging.h"
+#include "x86-64/types.h"
 #include <types.h>
 #include <boot.h>
 #include <list.h>
@@ -40,12 +43,44 @@ int pml4_setup(struct boot_info *boot_info)
 	/* Map in all regions available to us according to the boot_info */
 	
 	/* LAB 2: your code here */
+	struct mmap_entry *entry = (struct mmap_entry *)KADDR(boot_info->mmap_addr);
+	for (size_t i = 0; i < boot_info->mmap_len; ++i, ++entry) {
+		if (entry->type != MMAP_FREE) {
+			continue;
+		}
+		uintptr_t start = ROUNDDOWN(entry->addr, PAGE_SIZE);
+		uintptr_t end = ROUNDUP(entry->addr + entry->len, PAGE_SIZE);
+		boot_map_region(kernel_pml4, (void *)(KERNEL_VMA + start), end - start, start,
+		    PAGE_PRESENT | PAGE_NO_EXEC | PAGE_WRITE);
+	}
 
 	/* Correct page permissions according to the kernel ELF header, as
 	 * passed to us by boot_info
 	 */
-
 	/* LAB 2: your code here. */
+	struct elf *eh = boot_info->elf_hdr;
+	struct elf_proghdr *ph = (struct elf_proghdr *)((uint8_t *)eh + eh->e_phoff);
+	for (size_t i = 0; i < eh->e_phnum; ++i, ++ph) {
+		if (ph->p_type != ELF_PROG_LOAD) {
+			continue;
+		}
+		uintptr_t va = ROUNDDOWN(ph->p_va, PAGE_SIZE);
+		uintptr_t pa = ROUNDDOWN(ph->p_pa, PAGE_SIZE);
+		size_t memsz = ph->p_memsz;
+		size_t filesz = ph->p_filesz;
+		uint32_t flags = ph->p_flags;
+		uintptr_t  perm = PAGE_PRESENT;
+		size_t page_off = ph->p_va & (PAGE_SIZE - 1);
+    	size_t size = ROUNDUP((page_off + ph->p_memsz),PAGE_SIZE);
+		if (!(flags & ELF_PROG_FLAG_EXEC))
+			perm |= PAGE_NO_EXEC;
+		if (flags & ELF_PROG_FLAG_WRITE) {
+			perm |= PAGE_WRITE;
+			boot_map_region(kernel_pml4, (void *)(KERNEL_VMA + va), memsz, pa, perm);
+		}
+
+		//maybe not complete, what if filesz < memsz?
+	}
 
 	/* Use the physical memory that 'bootstack' refers to as the kernel
 	 * stack. The kernel stack grows down from virtual address KSTACK_TOP.
@@ -53,12 +88,15 @@ int pml4_setup(struct boot_info *boot_info)
 	 */
 
 	/* LAB 2: your code here. */
-
+	extern char bootstack[];
+	boot_map_region(kernel_pml4, (void *)(KSTACK_TOP - KSTACK_SIZE),KSTACK_SIZE,
+		(physaddr_t)bootstack, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
 	 
 	/* Map in the metadata pages from the buddy allocator as RW-. */
 	
 	/* LAB 2: your code here. */
-	
+	boot_map_region(kernel_pml4, (void *)KPAGES, npages * sizeof(*pages),
+        (physaddr_t) pages, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
 
 	/* Map in the video memory; range [IO_PHYS_MEM, EXT_PHYS_MEM) as RW- */
 	boot_map_region(kernel_pml4, (void *)(KERNEL_VMA + IO_PHYS_MEM), EXT_PHYS_MEM - IO_PHYS_MEM,
@@ -69,7 +107,7 @@ int pml4_setup(struct boot_info *boot_info)
 	 */
 
 	/* LAB 2: your code here. */
-
+	buddy_migrate();
 
 	return 0;
 }
@@ -120,6 +158,7 @@ void mem_init(struct boot_info *boot_info)
 	 * still not accessible until lab 2.
 	 */
 	npages = MIN(BOOT_MAP_LIM, highest_addr) / PAGE_SIZE;
+	//npages = highest_addr / PAGE_SIZE;
 
 	/* Remove this line when you're ready to test this function. */
 	//panic("mem_init: This function is not finished\n");
@@ -145,7 +184,10 @@ void mem_init(struct boot_info *boot_info)
 
 	/* Enable the NX-bit. */
 	/* LAB 2: your code here. */
-
+	uint64_t efer = read_msr(MSR_EFER);
+	efer |= MSR_EFER_NXE;
+	write_msr(MSR_EFER, efer);
+	
 	// TODO improve this
 	// We cannot intercept load_pml4 since it is a static method, so there
 	// are multiple instances of it.
@@ -153,7 +195,7 @@ void mem_init(struct boot_info *boot_info)
 
 	/* Load the kernel PML4. */
 	/* LAB 2: your code here. */
-
+	//load_pml4(kernel_pml4);
 	/* Add the rest of the physical memory to the buddy allocator. */
 	page_init_ext(boot_info);
 }
@@ -244,8 +286,8 @@ void page_init(struct boot_info *boot_info)
 				(pa >= ROUNDDOWN(KERNEL_LMA, PAGE_SIZE) && pa < end) ||
 				((pa >= ROUNDDOWN(PADDR(boot_info), PAGE_SIZE) && 
 				pa < ROUNDUP(PADDR(boot_info) + sizeof(*boot_info), PAGE_SIZE)) ||
-				(pa >= ROUNDDOWN((physaddr_t)(boot_info->elf_hdr), PAGE_SIZE)
-				&& pa < ROUNDUP((physaddr_t)(boot_info->elf_hdr + sizeof(*boot_info->elf_hdr)),PAGE_SIZE)))){
+				(pa >= ROUNDDOWN((physaddr_t)(boot_info->elf_hdr), PAGE_SIZE) && 
+				pa < ROUNDUP((physaddr_t)(boot_info->elf_hdr + sizeof(*boot_info->elf_hdr)),PAGE_SIZE)))){
 					
 				page = pa2page(pa);
 				page->pp_avail = 1;
@@ -289,5 +331,22 @@ void page_init_ext(struct boot_info *boot_info)
 	 */
 	for (i = 0; i < boot_info->mmap_len; ++i, ++entry) {
 		/* LAB 2: your code here. */
+		if (entry->type != MMAP_FREE) {
+			continue;
+		}
+		for (pa = ROUNDDOWN(entry->addr, PAGE_SIZE); pa < ROUNDUP(entry->addr + entry->len, PAGE_SIZE); pa += PAGE_SIZE) {
+			if (pa < BOOT_MAP_LIM) {
+				continue;	
+			}
+			if (pa >= end) {
+				break;
+			}
+			page = pa2page(pa);
+			page->pp_avail = 1;
+			if (page->pp_ref == 0) {
+				page_free(page);
+			}
+		}
+
 	}
 }

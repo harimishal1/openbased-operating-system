@@ -83,9 +83,7 @@ static int ptbl_walk_range(struct page_table *ptbl, uintptr_t base,
 				return r;
 		}
 
-		if (*entry & PAGE_PRESENT) {
-
-		} else {
+		if (!(*entry & PAGE_PRESENT))  {
 			if (walker->pt_hole_callback) {
 				int r = walker->pt_hole_callback(ptbl_start(base), ptbl_end(base), walker);
 				if (r < 0)
