@@ -1,3 +1,4 @@
+#include "x86-64/paging.h"
 #include <types.h>
 #include <paging.h>
 
@@ -17,6 +18,9 @@ static int lookup_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 
 	//cprintf("lookup_pte: base %p end %p\n the ppn is: %lx", (void *)base, (void *)end, entry ? *entry >> 12 : 0);
 	/* LAB 2: your code here. */
+	if (*entry & PAGE_PRESENT) {
+		info->entry = entry;
+	}
 	return 0;
 }
 
@@ -28,6 +32,11 @@ static int lookup_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct lookup_info *info = walker->udata;
 
 	/* LAB 2: your code here. */
+	if (*entry & PAGE_PRESENT) {
+		if (*entry & PAGE_HUGE) {
+			info->entry = entry;
+		}
+	}
 	return 0;
 }
 
@@ -59,5 +68,11 @@ struct page_info *page_lookup(struct page_table *pml4, void *va,
 		return NULL;
 
 	/* LAB 2: your code here. */
+	if (entry_store) {
+		*entry_store = info.entry;
+	}
+	if (info.entry) {
+		return pa2page(PAGE_ADDR(*info.entry));
+	}
 	return NULL;
 }
