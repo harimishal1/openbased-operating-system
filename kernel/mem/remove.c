@@ -18,6 +18,13 @@ static int remove_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct page_info *page;
 
 	/* LAB 2: your code here. */
+	if (*entry & PAGE_PRESENT) {
+		page = pa2page(PAGE_ADDR(*entry));
+		// page->pp_ref--;
+		page_decref(page);
+		*entry = 0;
+		tlb_invalidate(info->pml4, (void *) base);
+	}
 	return 0;
 }
 
@@ -32,6 +39,18 @@ static int remove_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct page_info *page;
 
 	/* LAB 2: your code here. */
+	if (*entry & PAGE_PRESENT) {
+		if (*entry & PAGE_HUGE) {
+			page = pa2page(PAGE_ADDR(*entry));
+			page_decref(page);
+			*entry = 0;
+			tlb_invalidate(info->pml4, (void *) base);
+		} else {
+			int r = ptbl_split(entry, base, end, walker);
+			if (r < 0)
+				return r;
+		}
+	}
 	return 0;
 }
 
@@ -47,6 +66,10 @@ void unmap_page_range(struct page_table *pml4, void *va, size_t size)
 		.pte_callback = remove_pte,
 		.pde_callback = remove_pde,
 		/* LAB 2: your code here. */
+		// .pte_unmap = ptbl_free,
+		.pde_unmap = ptbl_free,
+		.pdpte_unmap = ptbl_free,
+		.pml4e_unmap = ptbl_free,
 		.udata = &info,
 	};
 
@@ -63,4 +86,5 @@ void unmap_user_pages(struct page_table *pml4)
 void page_remove(struct page_table *pml4, void *va)
 {
 	/* LAB 2: your code here */
+	unmap_page_range(pml4, va, PAGE_SIZE);
 }

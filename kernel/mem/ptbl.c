@@ -100,5 +100,21 @@ int ptbl_free(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
 {
 	/* LAB 2: your code here. */
+	if (!(*entry & PAGE_PRESENT)) {
+		return 0;
+	}
+
+	struct page_info *page = pa2page(PAGE_ADDR(*entry));
+	struct page_table *page_table = (struct page_table *)page2kva(page);
+
+	for (size_t i = 0; i < 512; i++) {
+		if (page_table->entries[i] & PAGE_PRESENT) {
+			return 0;
+		}
+	}
+
+	page_free(page);
+	*entry = 0;
+	
 	return 0;
 }
