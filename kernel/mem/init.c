@@ -1,4 +1,5 @@
 #include "kernel/mem/buddy.h"
+#include "kernel/mem/map.h"
 #include "x86-64/paging.h"
 #include "x86-64/types.h"
 #include <types.h>
@@ -43,44 +44,13 @@ int pml4_setup(struct boot_info *boot_info)
 	/* Map in all regions available to us according to the boot_info */
 	
 	/* LAB 2: your code here */
-	struct mmap_entry *entry = (struct mmap_entry *)KADDR(boot_info->mmap_addr);
-	for (size_t i = 0; i < boot_info->mmap_len; ++i, ++entry) {
-		if (entry->type != MMAP_FREE) {
-			continue;
-		}
-		uintptr_t start = ROUNDDOWN(entry->addr, PAGE_SIZE);
-		uintptr_t end = ROUNDUP(entry->addr + entry->len, PAGE_SIZE);
-		boot_map_region(kernel_pml4, (void *)(KERNEL_VMA + start), end - start, start,
-		    PAGE_PRESENT | PAGE_NO_EXEC | PAGE_WRITE);
-	}
+	boot_map_mmap(kernel_pml4, boot_info);
 
 	/* Correct page permissions according to the kernel ELF header, as
 	 * passed to us by boot_info
 	 */
 	/* LAB 2: your code here. */
-	struct elf *eh = boot_info->elf_hdr;
-	struct elf_proghdr *ph = (struct elf_proghdr *)((uint8_t *)eh + eh->e_phoff);
-	for (size_t i = 0; i < eh->e_phnum; ++i, ++ph) {
-		if (ph->p_type != ELF_PROG_LOAD) {
-			continue;
-		}
-		uintptr_t va = ROUNDDOWN(ph->p_va, PAGE_SIZE);
-		uintptr_t pa = ROUNDDOWN(ph->p_pa, PAGE_SIZE);
-		size_t memsz = ph->p_memsz;
-		size_t filesz = ph->p_filesz;
-		uint32_t flags = ph->p_flags;
-		uintptr_t  perm = PAGE_PRESENT;
-		size_t page_off = ph->p_va & (PAGE_SIZE - 1);
-    	size_t size = ROUNDUP((page_off + ph->p_memsz),PAGE_SIZE);
-		if (!(flags & ELF_PROG_FLAG_EXEC))
-			perm |= PAGE_NO_EXEC;
-		if (flags & ELF_PROG_FLAG_WRITE) {
-			perm |= PAGE_WRITE;
-			boot_map_region(kernel_pml4, (void *)(KERNEL_VMA + va), memsz, pa, perm);
-		}
-
-		//maybe not complete, what if filesz < memsz?
-	}
+	boot_map_elf(kernel_pml4, boot_info->elf_hdr);
 
 	/* Use the physical memory that 'bootstack' refers to as the kernel
 	 * stack. The kernel stack grows down from virtual address KSTACK_TOP.
@@ -95,7 +65,7 @@ int pml4_setup(struct boot_info *boot_info)
 	/* Map in the metadata pages from the buddy allocator as RW-. */
 	
 	/* LAB 2: your code here. */
-	boot_map_region(kernel_pml4, (void *)KPAGES, npages * sizeof(*pages),
+	boot_map_region(kernel_pml4, (void *)KPAGES, ROUNDUP((npages * sizeof(*pages)),PAGE_SIZE),
         (physaddr_t) pages, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
 
 	/* Map in the video memory; range [IO_PHYS_MEM, EXT_PHYS_MEM) as RW- */
@@ -195,7 +165,9 @@ void mem_init(struct boot_info *boot_info)
 
 	/* Load the kernel PML4. */
 	/* LAB 2: your code here. */
-	//load_pml4(kernel_pml4);
+
+	//load_pml4(kernel_pml4); - need to fix this, uncommenting it leads to a boot loop; maybe triple fault. idk why yet
+	
 	/* Add the rest of the physical memory to the buddy allocator. */
 	page_init_ext(boot_info);
 }
