@@ -6,6 +6,8 @@
 
 struct remove_info {
 	struct page_table *pml4;
+	// new
+	size_t size_removed;
 };
 
 /* Removes the page if present by decrementing the reference count, clearing the
@@ -41,14 +43,21 @@ static int remove_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	/* LAB 2: your code here. */
 	if (*entry & PAGE_PRESENT) {
 		if (*entry & PAGE_HUGE) {
+
 			page = pa2page(PAGE_ADDR(*entry));
-			page_decref(page);
+
+			if (info->size_removed < HPAGE_SIZE - 1) {
+				int r = ptbl_split(entry, base, end, walker);
+				if (r < 0) {
+					return r;
+				}
+			} else {
+				page_decref(page);
+			}
+
+			// page_decref(page);
 			*entry = 0;
 			tlb_invalidate(info->pml4, (void *) base);
-		} else {
-			int r = ptbl_split(entry, base, end, walker);
-			if (r < 0)
-				return r;
 		}
 	}
 	return 0;
@@ -61,6 +70,7 @@ void unmap_page_range(struct page_table *pml4, void *va, size_t size)
 	/* LAB 2: your code here. */
 	struct remove_info info = {
 		.pml4 = pml4,
+		.size_removed = size,
 	};
 	struct page_walker walker = {
 		.pte_callback = remove_pte,
