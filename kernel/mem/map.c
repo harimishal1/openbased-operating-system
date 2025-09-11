@@ -1,4 +1,9 @@
 
+#include "kernel/mem/buddy.h"
+#include "kernel/mem/dump.h"
+#include "kernel/mem/ptbl.h"
+#include "stdio.h"
+#include "x86-64/paging.h"
 #include "x86-64/types.h"
 #include <types.h>
 #include <paging.h>
@@ -20,11 +25,11 @@ static int boot_map_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
 {
 	struct boot_map_info *info = walker->udata;
-	*entry = info->pa | info->flags;
-	info-> pa += PAGE_SIZE;
-	if (info->pa & (PAGE_SIZE - 1)) {
+	/* if !((info->pa & (PAGE_SIZE - 1)) == 0) {
 		panic("boot_map_pte: not aligned");
-	}
+	} */
+	*entry = PAGE_ADDR(info->pa) | info->flags | PAGE_PRESENT;
+	info->pa += PAGE_SIZE;
 	/* LAB 2: your code here. */
 	return 0;
 }
@@ -40,41 +45,16 @@ static int boot_map_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 {
 	struct boot_map_info *info = walker->udata;
 	/* LAB 2: your code here. */
-    if (((info->pa & (HPAGE_SIZE - 1)) == 0) &&
-        ((base & (HPAGE_SIZE - 1)) == 0) &&
-        (end - base + 1) >= HPAGE_SIZE) {
-        
-        *entry = info->pa | info->flags | PAGE_HUGE;
-        info->pa += HPAGE_SIZE;
+	if(end - base + 1 == HPAGE_SIZE && hpage_aligned(info->pa)) {
+		*entry = info->pa | info->flags | PAGE_HUGE;
+		info->pa += HPAGE_SIZE;
+		return 0;
+	} else {
+		ptbl_alloc(entry, base & ~(HPAGE_SIZE -1), base | (HPAGE_SIZE - 1), walker);
 		return 0;
 	}
-
-   if (*entry & PAGE_PRESENT && (*entry & PAGE_HUGE)) {
-        return ptbl_split(entry, base, end, walker);
-    } else {
-        return ptbl_alloc(entry, base, end, walker);
-    }
 }
 
-static int boot_map_pdpte(physaddr_t *entry, uintptr_t base, uintptr_t end,
-    struct page_walker *walker)
-{
-	struct boot_map_info *info = walker->udata;
-    if (((info->pa & (PDPT_SPAN - 1)) == 0) &&
-        ((base & (PDPT_SPAN - 1)) == 0) &&
-        (end - base + 1) >= PDPT_SPAN) {
-        
-        *entry = info->pa | info->flags | PAGE_HUGE;
-        info->pa += PDPT_SPAN;
-        return 0;
-    }
-
-    if (*entry & PAGE_PRESENT && (*entry & PAGE_HUGE)) {
-        return ptbl_split(entry, base, end, walker);
-    } else {
-        return ptbl_alloc(entry, base, end, walker);
-    }
-}
 
 /*
  * Maps the virtual address space at [va, va + size) to the contiguous physical
@@ -95,15 +75,14 @@ void boot_map_region(struct page_table *pml4, void *va, size_t size,
     physaddr_t pa, uint64_t flags)
 {
 	/* LAB 2: your code here. */
-	for (size_t i = 0; i < size; i += PAGE_SIZE) {
-		if (!page_aligned((uintptr_t)(va) + i) ||
-		    !page_aligned(pa + i) || !page_aligned(size)) {
-			panic("boot_map_region: not aligned");
-		}
-		
-	}
+	// for (size_t i = 0; i < size; i += PAGE_SIZE) {
+	// 	if (!page_aligned((uintptr_t)(va) + i) ||
+	// 	    !page_aligned(pa + i)) {
+	// 		panic("boot_map_region: not aligned");
+	// 	}
+	// }
 	struct boot_map_info info = {
-		.pa = pa,
+		.pa = ROUNDDOWN(pa, PAGE_SIZE),
 		.flags = flags,
 		.base = ROUNDDOWN((uintptr_t)va, PAGE_SIZE),
 		.end = ROUNDUP((uintptr_t)va + size, PAGE_SIZE) - 1,
@@ -112,10 +91,11 @@ void boot_map_region(struct page_table *pml4, void *va, size_t size,
 		.pte_callback = boot_map_pte,
 		.pde_callback = boot_map_pde,
 		/* LAB 2: your code here. */
-		.pdpte_callback = boot_map_pdpte,
+		.pml4e_callback = ptbl_alloc,
+		.pdpte_callback = ptbl_alloc,
 		.udata = &info,
 	};
-	walk_page_range(pml4, va, (void *)((uintptr_t)va + size), &walker);
+	walk_page_range(pml4, (void*)info.base, (void *)((uintptr_t)info.end), &walker);
 }
 
 
@@ -145,12 +125,13 @@ void boot_map_mmap(struct page_table *pml4, struct boot_info *boot_info) {
 		if (entry->type == MMAP_FREE) {
 			flags = PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC;
 		} else {
-			flags = PAGE_PRESENT | PAGE_NO_EXEC;
+			flags = PAGE_PRESENT;;
 		}
-		uintptr_t start = ROUNDDOWN(entry->addr, PAGE_SIZE);
-		uintptr_t end = ROUNDUP(entry->addr + entry->len, PAGE_SIZE);
-		boot_map_region(pml4, (void *)(KERNEL_VMA + start), end - start, start, flags);
+		uintptr_t start = entry->addr;
+		uintptr_t len = entry->len;
+		boot_map_region(pml4, (void *)(KERNEL_VMA + start), len, start, flags);
 	}
+	//dump_page_tables(pml4, 0);
 }
 
 /* This function parses the program headers of the ELF header of the kernel
@@ -172,32 +153,23 @@ void boot_map_elf(struct page_table *pml4, struct elf *elf_hdr)
 	/* LAB 2: your code here. */
 	struct elf *eh = elf_hdr;
 	for (i = 0; i < eh->e_phnum; ++i, ++prog_hdr) {
-		if (prog_hdr->p_type != ELF_PROG_LOAD) {
+		uint64_t va = prog_hdr->p_va;
+		if( prog_hdr->p_va < KERNEL_VMA) {
 			continue;
 		}
-		uintptr_t va = ROUNDDOWN(prog_hdr->p_va, PAGE_SIZE);
-		uintptr_t pa = ROUNDDOWN(prog_hdr->p_pa, PAGE_SIZE);
-		if( va + KERNEL_VMA < KERNEL_VMA) {
-			continue;
-		}
+		
 		flags = prog_hdr->p_flags;
 		size_t memsz = prog_hdr->p_memsz;
-		size_t filesz = prog_hdr->p_filesz;
-		uintptr_t perm = PAGE_PRESENT;
-		size_t page_off = prog_hdr->p_va & (PAGE_SIZE - 1);
-    	size_t size = ROUNDUP((page_off + prog_hdr->p_memsz), PAGE_SIZE);
-		size_t file_size = ROUNDUP((page_off + prog_hdr->p_filesz), PAGE_SIZE);
-        if (!(prog_hdr->p_flags & ELF_PROG_FLAG_EXEC)) {
+		uint64_t perm = PAGE_PRESENT;
+
+        if (!(flags & ELF_PROG_FLAG_EXEC)) {
             perm |= PAGE_NO_EXEC;
-        }
-        if (prog_hdr->p_flags & ELF_PROG_FLAG_WRITE) {
+        } 
+        if (flags & ELF_PROG_FLAG_WRITE) {
             perm |= PAGE_WRITE;
 		}
-		boot_map_region(pml4, (void *)(KERNEL_VMA + va), size, pa, perm);	
-		if (prog_hdr->p_memsz > prog_hdr->p_filesz) {
-            uintptr_t bss_start = prog_hdr->p_va + prog_hdr->p_filesz;
-            uintptr_t bss_end   = prog_hdr->p_va + prog_hdr->p_memsz;
-            memset((void *)(KERNEL_VMA + bss_start), 0, bss_end - bss_start);	
-		}
+		boot_map_region(pml4, (void*)va, memsz, (physaddr_t)PADDR((void*)va), perm);
 	}
+	//cprintf("#########################################\n");	
+	//dump_page_tables(pml4, 0);
 }

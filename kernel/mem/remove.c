@@ -6,8 +6,8 @@
 
 struct remove_info {
 	struct page_table *pml4;
-	// new
-	size_t size_removed;
+	uintptr_t base_remove;
+	uintptr_t end_remove;
 };
 
 /* Removes the page if present by decrementing the reference count, clearing the
@@ -46,18 +46,20 @@ static int remove_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 
 			page = pa2page(PAGE_ADDR(*entry));
 
-			if (info->size_removed < HPAGE_SIZE - 1) {
+
+			// if (info->size_removed < HPAGE_SIZE - 1) {
+			if ((MIN(end, info->end_remove)) - (MAX(base, info->base_remove)) < HPAGE_SIZE - 1) {
 				int r = ptbl_split(entry, base, end, walker);
 				if (r < 0) {
 					return r;
 				}
 			} else {
 				page_decref(page);
+				*entry = 0;
+				tlb_invalidate(info->pml4, (void *) base);
 			}
 
 			// page_decref(page);
-			*entry = 0;
-			tlb_invalidate(info->pml4, (void *) base);
 		}
 	}
 	return 0;
@@ -70,13 +72,14 @@ void unmap_page_range(struct page_table *pml4, void *va, size_t size)
 	/* LAB 2: your code here. */
 	struct remove_info info = {
 		.pml4 = pml4,
-		.size_removed = size,
+		.base_remove = (uintptr_t) va,
+		.end_remove = (uintptr_t) va + size,
 	};
 	struct page_walker walker = {
 		.pte_callback = remove_pte,
 		.pde_callback = remove_pde,
 		/* LAB 2: your code here. */
-		// .pte_unmap = ptbl_free,
+		.pte_unmap = ptbl_free,
 		.pde_unmap = ptbl_free,
 		.pdpte_unmap = ptbl_free,
 		.pml4e_unmap = ptbl_free,
@@ -96,5 +99,13 @@ void unmap_user_pages(struct page_table *pml4)
 void page_remove(struct page_table *pml4, void *va)
 {
 	/* LAB 2: your code here */
-	unmap_page_range(pml4, va, PAGE_SIZE);
+	struct page_info *page = page_lookup(pml4, va, NULL);
+	if (!page) {
+		return;
+	}
+	if (page->pp_order == BUDDY_2M_PAGE) {
+		unmap_page_range(pml4, va, HPAGE_SIZE);
+	} else {
+		unmap_page_range(pml4, va, PAGE_SIZE);
+	}
 }

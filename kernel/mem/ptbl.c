@@ -75,24 +75,32 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		*entry = page2pa(new_page) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
 
 		struct page_table *ptbl = (struct page_table *)page2kva(new_page);
+		bool statically_mapped = (huge_page->pp_free == 0 && huge_page->pp_ref == 0);
 
 		for (size_t i = 0; i < PAGE_TABLE_ENTRIES; i++) {
-			if (huge_page->pp_free == 0 && huge_page->pp_ref == 0) {
-				struct page_info *page = pa2page((physaddr_t)((uintptr_t)page2kva(huge_page) + i * PAGE_SIZE));
-				ptbl->entries[i] = page2pa(page);
+			if (statically_mapped) {
+				uintptr_t page_kva = (uintptr_t)page2kva(huge_page) + i * PAGE_SIZE;
+				physaddr_t page_pa = PADDR((void *)page_kva);
+				struct page_info *page = pa2page(page_pa);
+				ptbl->entries[i] = page2pa(page) | PAGE_PRESENT;
 				page->pp_free = 0;
 			} else {
 				struct page_info *page = page_alloc(ALLOC_ZERO);
 				if (!page) {
 					return -1;
 				}
-				memcpy(page2kva(page), (void *)((uintptr_t)page2kva(huge_page) + i * PAGE_SIZE), PAGE_SIZE);
+
+				uintptr_t page_kva = (uintptr_t)page2kva(huge_page) + i * PAGE_SIZE;
+
+				memcpy(page2kva(page), (void *)page_kva, PAGE_SIZE);
 				page->pp_free = 0;
 				page->pp_ref = 1;
-				ptbl->entries[i] = page2pa(page) | (PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
+				ptbl->entries[i] = page2pa(page) | PAGE_PRESENT;
 			}
 		}
-		page_decref(huge_page);
+		if (!statically_mapped) {
+			page_decref(huge_page);
+		}
 	}
 	return 0;
 }

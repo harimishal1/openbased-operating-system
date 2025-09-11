@@ -1,5 +1,8 @@
+#include "kernel/mem/init.h"
 #include "kernel/mem/buddy.h"
+#include "kernel/mem/dump.h"
 #include "kernel/mem/map.h"
+#include "stdio.h"
 #include "x86-64/paging.h"
 #include "x86-64/types.h"
 #include <types.h>
@@ -45,40 +48,41 @@ int pml4_setup(struct boot_info *boot_info)
 	
 	/* LAB 2: your code here */
 	boot_map_mmap(kernel_pml4, boot_info);
-
+	// dump_page_tables(kernel_pml4, 0);
+	
 	/* Correct page permissions according to the kernel ELF header, as
-	 * passed to us by boot_info
-	 */
+	* passed to us by boot_info
+	*/
 	/* LAB 2: your code here. */
 	boot_map_elf(kernel_pml4, boot_info->elf_hdr);
-
+	//dump_page_tables(kernel_pml4, 0);
+	
 	/* Use the physical memory that 'bootstack' refers to as the kernel
-	 * stack. The kernel stack grows down from virtual address KSTACK_TOP.
-	 * Map 'bootstack' to [KSTACK_TOP - KSTACK_SIZE, KSTACK_TOP).
-	 */
-
+	* stack. The kernel stack grows down from virtual address KSTACK_TOP.
+	* Map 'bootstack' to [KSTACK_TOP - KSTACK_SIZE, KSTACK_TOP).
+	*/
+	
 	/* LAB 2: your code here. */
 	extern char bootstack[];
 	boot_map_region(kernel_pml4, (void *)(KSTACK_TOP - KSTACK_SIZE),KSTACK_SIZE,
-		(physaddr_t)bootstack, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
-	 
+	(physaddr_t)bootstack, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+	
 	/* Map in the metadata pages from the buddy allocator as RW-. */
 	
 	/* LAB 2: your code here. */
-	boot_map_region(kernel_pml4, (void *)KPAGES, ROUNDUP((npages * sizeof(*pages)),PAGE_SIZE),
-        (physaddr_t) pages, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
-
+	boot_map_region(kernel_pml4, (void *)KPAGES,(npages * sizeof(struct page_info)),
+	(physaddr_t) PADDR(pages), PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+	
 	/* Map in the video memory; range [IO_PHYS_MEM, EXT_PHYS_MEM) as RW- */
 	boot_map_region(kernel_pml4, (void *)(KERNEL_VMA + IO_PHYS_MEM), EXT_PHYS_MEM - IO_PHYS_MEM,
-	    IO_PHYS_MEM, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
-
+	IO_PHYS_MEM, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+	
 	/* Migrate the struct page_info structs to the newly mapped area using
-	 * buddy_migrate().
-	 */
-
+	* buddy_migrate().
+	*/
+	
 	/* LAB 2: your code here. */
 	buddy_migrate();
-
 	return 0;
 }
 
@@ -149,9 +153,10 @@ void mem_init(struct boot_info *boot_info)
 	 */
 	page_init(boot_info);
 
+	
 	/* Setup the initial PML4 for the kernel. */
 	pml4_setup(boot_info);
-
+	
 	/* Enable the NX-bit. */
 	/* LAB 2: your code here. */
 	uint64_t efer = read_msr(MSR_EFER);
@@ -162,11 +167,13 @@ void mem_init(struct boot_info *boot_info)
 	// We cannot intercept load_pml4 since it is a static method, so there
 	// are multiple instances of it.
 	validate_pml4();
-
+	
 	/* Load the kernel PML4. */
 	/* LAB 2: your code here. */
+	
+	load_pml4(((void*)kernel_pml4 - KERNEL_VMA)); 
 
-	//load_pml4(kernel_pml4); // need to fix this, uncommenting it leads to a boot loop; maybe triple fault. idk why yet
+	//cprintf("FUCKKKKKKKKKKKKKKKKKKKKKKKKKK\n");
 	
 	/* Add the rest of the physical memory to the buddy allocator. */
 	page_init_ext(boot_info);
@@ -307,29 +314,32 @@ void page_init_ext(struct boot_info *boot_info)
             continue;
         }
 
-        uintptr_t region_start = ROUNDDOWN(entry->addr, PAGE_SIZE);
-        uintptr_t region_end   = ROUNDUP(entry->addr + entry->len, PAGE_SIZE);
+        uintptr_t region_start = ROUNDUP(entry->addr, PAGE_SIZE);
+        uintptr_t region_end   = ROUNDDOWN(entry->addr + entry->len, PAGE_SIZE);
 
         for (pa = region_start; pa < region_end; pa += PAGE_SIZE) {
             if (pa < BOOT_MAP_LIM) {
                 continue; 
             }
-            if (pa >= end) {
-                break;
-            }
 
             size_t idx = PAGE_INDEX(pa);
             if (idx >= npages) {
-                if (buddy_grow(kernel_pml4, idx + 1) < 0) {
+                if (buddy_grow(kernel_pml4, idx) < 0) {
                     panic("page_init_ext: buddy_grow failed");
                 }
             }
-            page = &pages[idx];
+            // page = &pages[idx];
+			page = pa2page(pa);
             page->pp_avail = 1;
+			page->pp_zero = 0;
+			page->pp_ref = 0;
+			page->pp_order = 0;
+			page->pp_free = 0;
+			page_free(page);
 
-            if (page->pp_ref == 0) {
-                page_free(page);
-            }
+            // if (page->pp_ref == 0) {
+            //     page_free(page);
+            // }
         }
 
 	}
