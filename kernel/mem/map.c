@@ -49,23 +49,31 @@ static int boot_map_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		return 0;
 	}
 
-	//struct page_table *ptbl = ptbl_split(entry, base, end, walker);
-    return 0;
+   if (*entry & PAGE_PRESENT && (*entry & PAGE_HUGE)) {
+        return ptbl_split(entry, base, end, walker);
+    } else {
+        return ptbl_alloc(entry, base, end, walker);
+    }
 }
-
 
 static int boot_map_pdpte(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
 {
 	struct boot_map_info *info = walker->udata;
-	return 0;
-}
+    if (((info->pa & (PDPT_SPAN - 1)) == 0) &&
+        ((base & (PDPT_SPAN - 1)) == 0) &&
+        (end - base + 1) >= PDPT_SPAN) {
+        
+        *entry = info->pa | info->flags | PAGE_HUGE;
+        info->pa += PDPT_SPAN;
+        return 0;
+    }
 
-static int boot_map_pml4e(physaddr_t *entry, uintptr_t base, uintptr_t end,
-	struct page_walker *walker)
-{
-	struct boot_map_info *info = walker->udata;
-	return 0;
+    if (*entry & PAGE_PRESENT && (*entry & PAGE_HUGE)) {
+        return ptbl_split(entry, base, end, walker);
+    } else {
+        return ptbl_alloc(entry, base, end, walker);
+    }
 }
 
 /*
@@ -103,9 +111,8 @@ void boot_map_region(struct page_table *pml4, void *va, size_t size,
 	struct page_walker walker = {
 		.pte_callback = boot_map_pte,
 		.pde_callback = boot_map_pde,
-		.pdpte_callback = boot_map_pdpte,
-		.pml4e_callback = boot_map_pml4e,
 		/* LAB 2: your code here. */
+		.pdpte_callback = boot_map_pdpte,
 		.udata = &info,
 	};
 	walk_page_range(pml4, va, (void *)((uintptr_t)va + size), &walker);

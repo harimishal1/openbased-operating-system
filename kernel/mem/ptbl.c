@@ -1,4 +1,5 @@
 
+#include "kernel/mem/buddy.h"
 #include <types.h>
 #include <string.h>
 #include <paging.h>
@@ -119,6 +120,9 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
 {
 	/* LAB 2: your code here. */
+	if( *entry & PAGE_HUGE) {
+		return 0;
+	}
 	return 0;
 }
 
