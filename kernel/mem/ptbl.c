@@ -1,4 +1,5 @@
 
+#include "kernel/mem/buddy.h"
 #include <types.h>
 #include <string.h>
 #include <paging.h>
@@ -61,6 +62,19 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
 {
 	/* LAB 2: your code here. */
+	if((*entry & PAGE_HUGE) && !(*entry & PAGE_PRESENT)) {
+		return 0;
+	}
+
+/* 	if (!(*entry & PAGE_PRESENT)) {
+        struct page_table *ptbl = ptbl_alloc(entry, base, end, walker);  
+		if (!ptbl)
+            panic("ptbl_split: failed to allocate page table");
+        physaddr_t pt_pa = page2pa(ptbl);
+        *entry = pt_pa | PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC;
+        return 0;
+    }
+ */
 	return 0;
 }
 
@@ -87,6 +101,9 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
 {
 	/* LAB 2: your code here. */
+	if( *entry & PAGE_HUGE) {
+		return 0;
+	}
 	return 0;
 }
 

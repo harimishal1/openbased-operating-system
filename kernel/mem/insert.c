@@ -148,7 +148,6 @@ int page_insert(struct page_table *pml4, struct page_info *page, void *va,
 		/* LAB 2: your code here. */
 		.pdpte_callback = insert_pdpte,
 		.pml4e_callback = insert_pml4e,
-		// .pt_hole_callback = insert_hole,
 		.udata = &info,
 	};
 

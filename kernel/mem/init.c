@@ -166,7 +166,7 @@ void mem_init(struct boot_info *boot_info)
 	/* Load the kernel PML4. */
 	/* LAB 2: your code here. */
 
-	//load_pml4(kernel_pml4); - need to fix this, uncommenting it leads to a boot loop; maybe triple fault. idk why yet
+	//load_pml4(kernel_pml4); // need to fix this, uncommenting it leads to a boot loop; maybe triple fault. idk why yet
 	
 	/* Add the rest of the physical memory to the buddy allocator. */
 	page_init_ext(boot_info);
@@ -304,21 +304,33 @@ void page_init_ext(struct boot_info *boot_info)
 	for (i = 0; i < boot_info->mmap_len; ++i, ++entry) {
 		/* LAB 2: your code here. */
 		if (entry->type != MMAP_FREE) {
-			continue;
-		}
-		for (pa = ROUNDDOWN(entry->addr, PAGE_SIZE); pa < ROUNDUP(entry->addr + entry->len, PAGE_SIZE); pa += PAGE_SIZE) {
-			if (pa < BOOT_MAP_LIM) {
-				continue;	
-			}
-			if (pa >= end) {
-				break;
-			}
-			page = pa2page(pa);
-			page->pp_avail = 1;
-			if (page->pp_ref == 0) {
-				page_free(page);
-			}
-		}
+            continue;
+        }
+
+        uintptr_t region_start = ROUNDDOWN(entry->addr, PAGE_SIZE);
+        uintptr_t region_end   = ROUNDUP(entry->addr + entry->len, PAGE_SIZE);
+
+        for (pa = region_start; pa < region_end; pa += PAGE_SIZE) {
+            if (pa < BOOT_MAP_LIM) {
+                continue; 
+            }
+            if (pa >= end) {
+                break;
+            }
+
+            size_t idx = PAGE_INDEX(pa);
+            if (idx >= npages) {
+                if (buddy_grow(kernel_pml4, idx + 1) < 0) {
+                    panic("page_init_ext: buddy_grow failed");
+                }
+            }
+            page = &pages[idx];
+            page->pp_avail = 1;
+
+            if (page->pp_ref == 0) {
+                page_free(page);
+            }
+        }
 
 	}
 }
