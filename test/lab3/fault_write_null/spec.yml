@@ -1,0 +1,13 @@
+name: User Fault - Write to NULL
+description: Trying to write to NULL
+
+regexlines:
+  - '.PID     1. user fault va 0x0 ip 0x8.....'
+  - 'Incoming INT frame at 0xfffffe7fffffff..'
+  - 'INT frame at 0xf.......'
+  - ' INT 14: Page Fault \(#PF\)'
+  - ' ERR 0x0000000000000006.*'
+  - '.PID     1. Freed task with PID 1'
+
+noregexlines:
+  - '\[PID     1\] Exiting gracefully with code .*'

@@ -172,6 +172,27 @@ BOOT_LDFLAGS += -static --no-pie   # Fixed memory locations
 
 
 ###############################
+### User and lib build
+###############################
+
+USER_CFLAGS := $(CFLAGS)                  # We inherit all default flags
+USER_CFLAGS += -gdwarf-2                  # Generate debugging symbols
+USER_CFLAGS += -fPIC                      # Allow code to be relocated for ASLR
+USER_CFLAGS += -mno-mmx -mno-sse -mno-avx # Disable complex SIMD extensions
+USER_CFLAGS += -w                         # Disable warnings
+USER_CFLAGS += -DUSE_CLANG                # Probably unused
+
+# This flag is set when compiling user code, to prevent accidentally
+# mixing user and kernel code.
+USER_CFLAGS += -DOpenLSD_USER 
+
+# Linker flags
+USER_LDFLAGS := -n                   # Specific output format
+USER_LDFLAGS := -nostdlib            # We bring our own library
+USER_LDFLAGS := -Tuser/user.ld       # Use custom linker script
+
+
+###############################
 ### Kernel build
 ###############################
 
@@ -214,7 +235,8 @@ KERNEL_LDFLAGS += --defsym=KERNEL_VMA=0xFFFF800000000000
 # Include the boot-specific Makefile
 include boot/Makefile
 
-# Include the lib-specific Makefile
+# Include the user and lib-specific Makefile
+include user/Makefile
 include lib/Makefile
 
 # Include the tests-specific Makefile
@@ -245,8 +267,8 @@ ifneq ($(TEST),)
 QEMUOPTS += -fw_cfg opt/openlsd.test,string=$(subst -,_,$(TEST))
 endif
 
-ifneq ($(USER),)
-QEMUOPTS += -fw_cfg opt/openlsd.user,string=$(subst -,_,$(USER))
+ifneq ($(USER_BIN),)
+QEMUOPTS += -fw_cfg opt/openlsd.user,string=$(subst -,_,$(USER_BIN))
 endif
 
 # Appropriate output format
@@ -292,8 +314,8 @@ QEMUOPTS += $(QEMUEXTRA)
 
 define gdbrc_userbin
     @: Add the selected user program symbols, if running a user program
-	@if [ "$(USER)" != "" ]; then \
-		echo "add-symbol-file obj/user/$(USER)" >> $@; \
+	@if [ "$(USER_BIN)" != "" ]; then \
+		echo "add-symbol-file obj/user/$(USER_BIN)" >> $@; \
 	fi
 
     @: Add the selected test user program symbols, if running a test AND the test has user symbols
@@ -342,10 +364,10 @@ run-gdb: run
 
 # Order is important here, to make sure that the GDB target is not mistaken for the non-GDB
 run-user-%-gdb:
-	@$(MAKE) run-gdb USER=$*
+	@$(MAKE) run-gdb USER_BIN=$*
 
 run-user-%:
-	@$(MAKE) run USER=$*
+	@$(MAKE) run USER_BIN=$*
 
 #### Run a specific test
 

@@ -1,0 +1,15 @@
+name: Evil - Illegal Software Interrupt
+description: Tries to trigger an illegal interrupt as user
+
+required: true
+
+regexlines:
+  - 'Incoming INT frame at 0xfffffe7fffffff..'
+  - 'INT frame at 0xf.......'
+  - ' INT 13: General Protection \(#GP\)'
+  - ' RIP 0x00000000008..... RFL 0x.{16}'
+  - ' CS  0x0023             DS  0x001b             SS  0x001b'
+  - '.PID     1. Freed task with PID 1'
+
+noregexlines:
+  - '\[PID     1\] Exiting gracefully with code .*'

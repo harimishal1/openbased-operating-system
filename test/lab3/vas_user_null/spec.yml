@@ -1,0 +1,4 @@
+name: Virtual Address Space - NULL
+description: Checks that the NULL address is not mapped
+
+required: true

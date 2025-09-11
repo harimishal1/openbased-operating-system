@@ -1,0 +1,15 @@
+name: User Fault - Write to Executable
+description: Trying to write data to executable memory
+
+required: true
+
+regexlines:
+- '.PID     1. user fault va 0x800... ip 0x8.....'
+- 'Incoming INT frame at 0xfffffe7fffffff..'
+- 'INT frame at 0xf.......'
+- ' INT 14: Page Fault \(#PF\)'
+- ' ERR 0x0000000000000007.*'
+- '.PID     1. Freed task with PID 1'
+
+noregexlines:
+  - '\[PID     1\] Exiting gracefully with code .*'

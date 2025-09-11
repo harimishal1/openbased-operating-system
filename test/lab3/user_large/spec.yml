@@ -1,0 +1,11 @@
+name: User Code - Binary with Large BSS Section
+description: Test reads and writes to a large BSS
+
+regexlines:
+  - 'Making sure bss works right...'
+  - 'Yes, good. Now doing a wild write off the end...'
+  - '.PID     1. user fault va 0xc..... ip 0x8.....'
+  - '.PID     1. Freed task with PID 1'
+
+noregexlines:
+  - '\[PID     1\] Exiting gracefully with code .*'

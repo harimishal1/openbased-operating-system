@@ -1,0 +1,15 @@
+name: User Fault - Execute Data
+description: Tries to execute data, which should not be possible
+
+required: true
+
+regexlines:
+  - '.PID     1. user fault va 0x802... ip 0x802...'
+  - 'Incoming INT frame at 0xfffffe7fffffff..'
+  - 'INT frame at 0xf.......'
+  - ' INT 14: Page Fault \(#PF\)'
+  - ' ERR 0x0000000000000015.*'
+  - '.PID     1. Freed task with PID 1'
+
+noregexlines:
+  - '\[PID     1\] Exiting gracefully with code .*'

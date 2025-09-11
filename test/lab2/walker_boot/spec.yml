@@ -14,7 +14,7 @@ matchlines:
   - "[TEST] Dumping a single huge page"
   - "  0xffff800000200000 - 0xffff8000003fffff [rwx- 2M]"
   - "[TEST] Dumping two huge pages"
-  - "  0xffff800000400000 - 0xffff8000005fffff [rwx- 2M]"
+  - "  0xffff800000400000 - 0xffff8000007fffff [rwx- 2M]"
 
 # Do not accept any more output lines than what is included above
 noregexlines:

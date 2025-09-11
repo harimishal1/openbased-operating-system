@@ -42,15 +42,22 @@ void test_point_handler(struct probe_frame *frame) {
 	}
 }
 
+static int test_point_userspace(struct probe_frame *frame) { return 0; }
+struct test_definition __test__userspace_only = {
+	.run_test = test_point_userspace,
+	.test_point = halt_kernel,
+	.should_continue = false,
+	.checksum = 0,
+};
 
-void tests_init() {
+uint8_t *tests_init() {
 	// First, find the test to execute
 	int ret = fwcfg_read("opt/openlsd.test", test_name, TEST_NAME_LENGTH);
 	
 	// No test to execute
 	if(ret == 0 || ret == -EINVAL) {
 		cprintf("[TESTS] No test to register\n");
-		return;
+		return NULL;
 	}
 	
 	// Error handling
@@ -74,6 +81,14 @@ void tests_init() {
 		register_probe(test->test_point, test_point_handler);
 	}
 
-	if(test == NULL)
+	// Try to find an accompanying user-space binary to execute for this test
+	char test_binary_name[TEST_NAME_LENGTH + TEST_BINARY_NAME_LENGTH] = "";
+	snprintf(test_binary_name, TEST_NAME_LENGTH + TEST_BINARY_NAME_LENGTH, "_binary_obj_test_%s_user_start", test_name);
+
+	uint8_t *test_binary = find_symbol(test_binary_name);
+
+	if(test == NULL && test_binary == NULL)
 		panic("[TESTS] Could not find test with name: %s\n", test_name);
+
+	return test_binary;
 }

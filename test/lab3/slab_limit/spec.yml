@@ -1,0 +1,2 @@
+name: Slab - Allocation Limit
+description: Checks that the slab allocator does not allow allocations beyond its capacity

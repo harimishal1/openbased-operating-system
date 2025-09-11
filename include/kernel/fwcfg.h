@@ -35,3 +35,4 @@ extern uint32_t fwcfg_file_count;
 int has_fwcfg();
 int fwcfg_init();
 int fwcfg_read(const char *name, char *buf, int n);
+int fwcfg_read_alloc(const char *name, char **buf);
