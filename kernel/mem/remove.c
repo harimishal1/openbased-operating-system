@@ -52,9 +52,9 @@ static int remove_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 				ptbl_split(entry, base & ~(PAGE_TABLE_SPAN - 1), end | (PAGE_TABLE_SPAN - 1), walker);
 			} else {
 				*entry = 0;
+				page_decref(old_page);
 			}
 			tlb_invalidate(info->pml4, (void *) (base & ~(PAGE_TABLE_SPAN - 1)));
-			page_decref(old_page);
 			return 0;
 		}
 	}

@@ -172,8 +172,6 @@ void mem_init(struct boot_info *boot_info)
 	/* LAB 2: your code here. */
 	
 	load_pml4(((void*)kernel_pml4 - KERNEL_VMA)); 
-
-	//cprintf("FUCKKKKKKKKKKKKKKKKKKKKKKKKKK\n");
 	
 	/* Add the rest of the physical memory to the buddy allocator. */
 	page_init_ext(boot_info);
@@ -216,16 +214,20 @@ void page_init(struct boot_info *boot_info)
 	 */
 
 	/* LAB 1: your code here */
-	physaddr_t reserved_start_pa = page2pa(pages);
-    physaddr_t reserved_end_pa = page2pa(pages) + (npages * sizeof *pages);
-    for (i = 0; i < npages; ++i) {
-        page = &pages[i];
-        physaddr_t current_pa = page2pa(page);
-        if (current_pa >= reserved_start_pa && current_pa < reserved_end_pa) {
-            page->pp_ref = 1;
-			page->pp_avail = 1;
-        }
-    }
+	for(struct page_info *p = pages; p < pages + npages; p++) {
+		struct page_info *pi = pa2page(PADDR(p));
+		pi->pp_ref = 1;
+	}
+	// physaddr_t reserved_start_pa = page2pa(pages);
+    // physaddr_t reserved_end_pa = page2pa(pages) + (npages * sizeof *pages);
+    // for (i = 0; i < npages; ++i) {
+    //     page = &pages[i];
+    //     physaddr_t current_pa = page2pa(page);
+    //     if (current_pa >= reserved_start_pa && current_pa < reserved_end_pa) {
+    //         page->pp_ref = 1;
+	// 		page->pp_avail = 1;
+    //     }
+    // }
 
 	/* Go through the pages reserved for VGA memory (for use in the console),
 	 * and mark all of them to be available.
@@ -274,9 +276,7 @@ void page_init(struct boot_info *boot_info)
 			}
             page = pa2page(pa);
             page->pp_avail = 1;
-			if (page->pp_ref == 0) {
-                page_free(page);
-            }
+			page_free(page);
         }
     }
 }

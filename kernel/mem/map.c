@@ -40,17 +40,17 @@ static int boot_map_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
  * 2M area. Otherwise this function calls ptbl_split() to split down the huge
  * page or allocate a page table.
  */
-static int boot_map_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
+static int boot_map_pde(physaddr_t*entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
 {
 	struct boot_map_info *info = walker->udata;
 	/* LAB 2: your code here. */
 	if( base >= info->base && end <= info->end && hpage_aligned(info->pa)) {
-		*entry = info->pa | info->flags | PAGE_HUGE;
+		*entry = info->pa | info->flags | PAGE_HUGE | PAGE_PRESENT;
 		info->pa += HPAGE_SIZE;
 		return 0;
 	} else {
-		ptbl_alloc(entry, base & ~(HPAGE_SIZE -1), base | (HPAGE_SIZE - 1), walker);
+		ptbl_alloc(entry, base & ~(HPAGE_SIZE - 1), base | (HPAGE_SIZE - 1), walker);
 		return 0;
 	}
 }
@@ -170,6 +170,4 @@ void boot_map_elf(struct page_table *pml4, struct elf *elf_hdr)
 		}
 		boot_map_region(pml4, (void*)va, memsz, (physaddr_t)PADDR((void*)va), perm);
 	}
-	//cprintf("#########################################\n");	
-	//dump_page_tables(pml4, 0);
 }

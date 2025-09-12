@@ -1,3 +1,4 @@
+#include "kernel/mem/buddy.h"
 #include "assert.h"
 #include "stdio.h"
 #include <types.h>
@@ -13,6 +14,8 @@
 /* Physical page metadata. */
 size_t npages;
 struct page_info *pages;
+
+extern uint32_t fucker;
 
 /*
  * List of free buddy chunks (often also referred to as buddy pages or simply
@@ -153,16 +156,23 @@ struct page_info *buddy_merge(struct page_info *page)
 	/* LAB 1: your code here. */
 	while (page->pp_order < BUDDY_MAX_ORDER - 1) {
 		struct page_info *buddy;
+		struct page_info *tmp;
+
 		size_t idx = page - pages, buddy_idx;
 		buddy_idx = idx ^ (1ULL << (page->pp_order));
 		buddy = pages + buddy_idx;
 
+		if(buddy->pp_avail == 0 || buddy->pp_ref > 0) {
+			break;
+		}
 		if (buddy->pp_free == 0 || buddy->pp_order != page->pp_order) {
 			break;
 		}
 		list_del(&buddy->pp_node);
 		if (page > buddy) {
+			tmp = page;
 			page = buddy;
+			buddy = tmp;
 		}
 
 		buddy->pp_free = 0;
@@ -264,6 +274,7 @@ void page_free(struct page_info *pp)
 	#endif
 	//invalid free detection
 
+	//cprintf("Freeing page %p of order %d\n", page2pa(pp), pp->pp_order);
    	pp = buddy_merge(pp);
 	pp->pp_free = 1;
 	list_add_tail(&buddy_free_list[pp->pp_order], &pp->pp_node);
@@ -276,6 +287,10 @@ void page_free(struct page_info *pp)
 void page_decref(struct page_info *pp)
 {
 	// Sanity check to help catch some sneaky bugs
+	if (pp->pp_ref == 0) {
+		panic("The page is %p\n", page2pa(pp));
+		// panic("the fucker is %d\n", fucker);
+	}
 	assert(pp->pp_ref > 0);
 	if (--pp->pp_ref == 0) {
 		page_free(pp);
@@ -346,7 +361,7 @@ int buddy_grow(struct page_table *pml4, size_t size)
 			struct page_info *page = page_alloc(ALLOC_ZERO);
 			if (!page)
 				return -1; // We ran out of memory
-
+			
 			// Ensure the page is mapped in the correct location: after the
 			// existing pages array
 			int ret = page_insert(pml4, page, (char *) pages_end + i * PAGE_SIZE,

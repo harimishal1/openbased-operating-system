@@ -9,6 +9,7 @@
 #include <paging.h>
 
 #include <kernel/mem.h>
+extern uint32_t fucker;
 
 /* Allocates a page table if none is present for the given entry.
  * If there is already something present in the PTE, then this function simply
@@ -28,7 +29,8 @@ int ptbl_alloc(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		return -1;
 	}
 	page->pp_ref++;
-	*entry = page2pa(page) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+	*entry = page2pa(page); 
+	*entry = *entry | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
 	return 0;
 }
 
@@ -76,31 +78,30 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		}
 		new_page->pp_ref++;
 
+		uint64_t flags = *entry & PAGE_UMASK;
+		
 		*entry = page2pa(new_page);
 		*entry = *entry | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
-
+		
 		struct page_table *ptbl = (struct page_table *)page2kva(new_page);
 		bool statically_mapped = (huge_page->pp_free == 0 && huge_page->pp_ref == 0);
-
+		
 		for (size_t i = 0; i < PAGE_TABLE_ENTRIES; i++) {
 			if (statically_mapped) {
-				// uintptr_t page_kva = (uintptr_t)page2kva(huge_page) + i * PAGE_SIZE;
-				// physaddr_t page_pa = PADDR((void *)page_kva);
-				// struct page_info *page = pa2page(page_pa);
 				struct page_info *page = huge_page + i;	
-				ptbl->entries[i] = page2pa(page) | PAGE_PRESENT;
-				page->pp_free = 0;
+				ptbl->entries[i] = page2pa(page) | PAGE_PRESENT | flags;
+				// page->pp_free = 0;
 			} else {
 				struct page_info *page = page_alloc(ALLOC_ZERO);
 				if (!page) {
 					return -1;
 				}
-
+				
 				uintptr_t page_kva = (uintptr_t)page2kva(huge_page) + i * PAGE_SIZE;
 				memcpy(page2kva(page), (void *)page_kva, PAGE_SIZE);
-				page->pp_free = 0;
+				// page->pp_free = 0;
 				page->pp_ref = 1;
-				ptbl->entries[i] = page2pa(page) | PAGE_PRESENT;
+				ptbl->entries[i] = page2pa(page) | PAGE_PRESENT | flags;
 			}
 		}
 		if (!statically_mapped) {
@@ -111,15 +112,15 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
 }
 
 /* Attempts to merge all consecutive pages in a page table into a huge page.
- *
- * First checks if the PDE points to a huge page. If the PDE points to a huge
- * page there is nothing to do. Otherwise the PDE points to a page table.
- * Then, this function checks all entries in the page table to check if they
- * point to present and available pages and share the same flags. If not all
- * pages are present or if not all flags are the same, this function simply
- * returns.
- * At this point the pages can be merged into a huge page. This function now
- * allocates a huge page and copies over the data from the consecutive pages
+*
+* First checks if the PDE points to a huge page. If the PDE points to a huge
+* page there is nothing to do. Otherwise the PDE points to a page table.
+* Then, this function checks all entries in the page table to check if they
+* point to present and available pages and share the same flags. If not all
+* pages are present or if not all flags are the same, this function simply
+* returns.
+* At this point the pages can be merged into a huge page. This function now
+* allocates a huge page and copies over the data from the consecutive pages
  * over to the huge page.
  * Finally, it sets the PDE to point to the huge page with the flags shared
  * between the previous pages.
@@ -129,40 +130,45 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
  *    are asked to merge pages from the buddy allocator (KPAGES) and you start
  *    freeing its old memory? This is prone to race conditions!
  */
-int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
+ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
-{
-	/* LAB 2: your code here. */
-	if( !(*entry & PAGE_PRESENT) || *entry & PAGE_HUGE) {
-		return 0;
-	}
-	return 0;
-	struct page_table *ptbl = (struct page_table *)KADDR(PAGE_ADDR(*entry));
-	struct page_info *pt = pa2page(PAGE_ADDR(*entry));
-	for(size_t i = 0; i < PAGE_TABLE_ENTRIES; i++) {
-		if(!(ptbl->entries[i] & PAGE_PRESENT)) {
-			return 0;
-		}
-		if( (ptbl->entries[i] & PAGE_UMASK) != (ptbl->entries[0] & PAGE_UMASK)) {
-			return 0;
-		}
-	}
-	struct page_info *huge_page = page_alloc(ALLOC_HUGE);
-	huge_page->pp_ref++;
-	uint64_t flags = ptbl->entries[0] & PAGE_UMASK;
-	for(size_t i = 0; i < PAGE_TABLE_ENTRIES; i++){
-		struct page_info *page = pa2page(PAGE_ADDR(ptbl->entries[i]));
-		memcpy(page2kva(huge_page) + i * PAGE_SIZE, page2kva(page), PAGE_SIZE);
-	}
-	*entry = page2pa(huge_page) | flags | PAGE_HUGE;
+	{
+		/* LAB 2: your code here. */
 
-	for(size_t i = 0; i < PAGE_TABLE_ENTRIES; i++){
-		tlb_invalidate((struct page_table*)read_cr3(), (void *)(base + i * PAGE_SIZE));
-		struct page_info *page = pa2page(PAGE_ADDR(ptbl->entries[i]));
-		// page_decref(page);
-	}
-	// page_decref(pt);
-	return 0;
+		if( !(*entry & PAGE_PRESENT) || *entry & PAGE_HUGE) {
+			return 0;
+		}
+		//return 0;
+		struct page_table *ptbl = (struct page_table *)KADDR(PAGE_ADDR(*entry));
+		struct page_info *pt = pa2page(PAGE_ADDR(*entry));
+		for(size_t i = 0; i < PAGE_TABLE_ENTRIES; i++) {
+			if(!(ptbl->entries[i] & PAGE_PRESENT)) {
+				return 0;
+			}
+			if( (ptbl->entries[i] & PAGE_UMASK) != (ptbl->entries[0] & PAGE_UMASK)) {
+				return 0;
+			}
+		}
+		struct page_info *huge_page = page_alloc(ALLOC_HUGE|ALLOC_ZERO);
+		huge_page->pp_ref++;
+		uint64_t flags = (ptbl->entries[0] & PAGE_UMASK);
+		for(size_t i = 0; i < PAGE_TABLE_ENTRIES; i++){
+			struct page_info *page = pa2page(PAGE_ADDR(ptbl->entries[i]));
+			memcpy(page2kva(huge_page) + i * PAGE_SIZE, page2kva(page), PAGE_SIZE);
+		}
+		*entry = page2pa(huge_page) | flags | PAGE_HUGE| PAGE_PRESENT;
+		for(size_t i = 0; i < PAGE_TABLE_ENTRIES; i++){
+			tlb_invalidate((struct page_table*)read_cr3(), (void *)(base + i * PAGE_SIZE));
+		}
+		for(size_t i = 0; i < PAGE_TABLE_ENTRIES; i++){
+			struct page_info *page = pa2page(PAGE_ADDR(ptbl->entries[i]));
+			fucker = 3;
+			// page_free(page);
+			page_decref(page);
+		}
+		fucker = 4;
+		page_decref(pt);
+		return 0;
 }
 
 /* Frees up the page table by checking if all entries are clear. Returns if no
