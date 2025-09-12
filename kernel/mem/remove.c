@@ -48,7 +48,7 @@ static int remove_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		if (*entry & PAGE_HUGE) {
 
 			old_page = pa2page(PAGE_ADDR(*entry));
-			if(info->base_remove > base && info->end_remove < end) {
+			if(info->base_remove > base || info->end_remove < end) {
 				ptbl_split(entry, base & ~(PAGE_TABLE_SPAN - 1), end | (PAGE_TABLE_SPAN - 1), walker);
 			} else {
 				*entry = 0;
