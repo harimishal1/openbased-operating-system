@@ -30,12 +30,10 @@ static int lookup_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct lookup_info *info = walker->udata;
 
 	/* LAB 2: your code here. */
-	if (*entry & PAGE_PRESENT) {
-		if (*entry & PAGE_HUGE) {
+	if ((*entry & PAGE_PRESENT) && (*entry & PAGE_HUGE)) {
 			info->entry = entry;
 		}
-	}
-	return 0;
+	return 0; 
 }
 
 /* Return the page mapped at virtual address 'va'.
@@ -72,7 +70,7 @@ struct page_info *page_lookup(struct page_table *pml4, void *va,
 	/* if (info.entry) {
 		return pa2page(PAGE_ADDR(*info.entry));
 	} */
-	if (info.entry && (*info.entry & PAGE_PRESENT)) {
+	if (info.entry) {
     	return pa2page(PAGE_ADDR(*info.entry));
 	}
 	return NULL;

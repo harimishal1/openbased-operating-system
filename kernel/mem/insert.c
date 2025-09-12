@@ -1,4 +1,5 @@
 
+#include "kernel/mem/ptbl.h"
 #include "x86-64/paging.h"
 #include <types.h>
 #include <paging.h>
@@ -148,6 +149,7 @@ int page_insert(struct page_table *pml4, struct page_info *page, void *va,
 		/* LAB 2: your code here. */
 		.pdpte_callback = insert_pdpte,
 		.pml4e_callback = insert_pml4e,
+		.pde_unmap = ptbl_merge,
 		.udata = &info,
 	};
 

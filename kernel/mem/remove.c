@@ -1,4 +1,7 @@
 
+#include "kernel/mem/buddy.h"
+#include "kernel/mem/ptbl.h"
+#include "kernel/mem/tlb.h"
 #include <types.h>
 #include <paging.h>
 
@@ -38,28 +41,21 @@ static int remove_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
 {
 	struct remove_info *info = walker->udata;
-	struct page_info *page;
+	struct page_info *old_page;
 
 	/* LAB 2: your code here. */
 	if (*entry & PAGE_PRESENT) {
 		if (*entry & PAGE_HUGE) {
 
-			page = pa2page(PAGE_ADDR(*entry));
-
-
-			// if (info->size_removed < HPAGE_SIZE - 1) {
-			if ((MIN(end, info->end_remove)) - (MAX(base, info->base_remove)) < HPAGE_SIZE - 1) {
-				int r = ptbl_split(entry, base, end, walker);
-				if (r < 0) {
-					return r;
-				}
+			old_page = pa2page(PAGE_ADDR(*entry));
+			if(info->base_remove > base && info->end_remove < end) {
+				ptbl_split(entry, base & ~(PAGE_TABLE_SPAN - 1), end | (PAGE_TABLE_SPAN - 1), walker);
 			} else {
-				page_decref(page);
 				*entry = 0;
-				tlb_invalidate(info->pml4, (void *) base);
 			}
-
-			// page_decref(page);
+			tlb_invalidate(info->pml4, (void *) (base & ~(PAGE_TABLE_SPAN - 1)));
+			page_decref(old_page);
+			return 0;
 		}
 	}
 	return 0;
@@ -79,7 +75,6 @@ void unmap_page_range(struct page_table *pml4, void *va, size_t size)
 		.pte_callback = remove_pte,
 		.pde_callback = remove_pde,
 		/* LAB 2: your code here. */
-		.pte_unmap = ptbl_free,
 		.pde_unmap = ptbl_free,
 		.pdpte_unmap = ptbl_free,
 		.pml4e_unmap = ptbl_free,

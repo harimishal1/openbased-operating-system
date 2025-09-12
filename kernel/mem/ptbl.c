@@ -1,5 +1,9 @@
 
 #include "kernel/mem/buddy.h"
+#include "kernel/mem/tlb.h"
+#include "stdio.h"
+#include "x86-64/asm.h"
+#include "x86-64/paging.h"
 #include <types.h>
 #include <string.h>
 #include <paging.h>
@@ -72,16 +76,18 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		}
 		new_page->pp_ref++;
 
-		*entry = page2pa(new_page) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+		*entry = page2pa(new_page);
+		*entry = *entry | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
 
 		struct page_table *ptbl = (struct page_table *)page2kva(new_page);
 		bool statically_mapped = (huge_page->pp_free == 0 && huge_page->pp_ref == 0);
 
 		for (size_t i = 0; i < PAGE_TABLE_ENTRIES; i++) {
 			if (statically_mapped) {
-				uintptr_t page_kva = (uintptr_t)page2kva(huge_page) + i * PAGE_SIZE;
-				physaddr_t page_pa = PADDR((void *)page_kva);
-				struct page_info *page = pa2page(page_pa);
+				// uintptr_t page_kva = (uintptr_t)page2kva(huge_page) + i * PAGE_SIZE;
+				// physaddr_t page_pa = PADDR((void *)page_kva);
+				// struct page_info *page = pa2page(page_pa);
+				struct page_info *page = huge_page + i;	
 				ptbl->entries[i] = page2pa(page) | PAGE_PRESENT;
 				page->pp_free = 0;
 			} else {
@@ -91,7 +97,6 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
 				}
 
 				uintptr_t page_kva = (uintptr_t)page2kva(huge_page) + i * PAGE_SIZE;
-
 				memcpy(page2kva(page), (void *)page_kva, PAGE_SIZE);
 				page->pp_free = 0;
 				page->pp_ref = 1;
@@ -128,9 +133,35 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
 {
 	/* LAB 2: your code here. */
-	if( *entry & PAGE_HUGE) {
+	if( !(*entry & PAGE_PRESENT) || *entry & PAGE_HUGE) {
 		return 0;
 	}
+	return 0;
+	struct page_table *ptbl = (struct page_table *)KADDR(PAGE_ADDR(*entry));
+	struct page_info *pt = pa2page(PAGE_ADDR(*entry));
+	for(size_t i = 0; i < PAGE_TABLE_ENTRIES; i++) {
+		if(!(ptbl->entries[i] & PAGE_PRESENT)) {
+			return 0;
+		}
+		if( (ptbl->entries[i] & PAGE_UMASK) != (ptbl->entries[0] & PAGE_UMASK)) {
+			return 0;
+		}
+	}
+	struct page_info *huge_page = page_alloc(ALLOC_HUGE);
+	huge_page->pp_ref++;
+	uint64_t flags = ptbl->entries[0] & PAGE_UMASK;
+	for(size_t i = 0; i < PAGE_TABLE_ENTRIES; i++){
+		struct page_info *page = pa2page(PAGE_ADDR(ptbl->entries[i]));
+		memcpy(page2kva(huge_page) + i * PAGE_SIZE, page2kva(page), PAGE_SIZE);
+	}
+	*entry = page2pa(huge_page) | flags | PAGE_HUGE;
+
+	for(size_t i = 0; i < PAGE_TABLE_ENTRIES; i++){
+		tlb_invalidate((struct page_table*)read_cr3(), (void *)(base + i * PAGE_SIZE));
+		struct page_info *page = pa2page(PAGE_ADDR(ptbl->entries[i]));
+		// page_decref(page);
+	}
+	// page_decref(pt);
 	return 0;
 }
 
@@ -144,7 +175,7 @@ int ptbl_free(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
 {
 	/* LAB 2: your code here. */
-	if (!(*entry & PAGE_PRESENT)) {
+	if ((*entry & PAGE_HUGE) && !(*entry & PAGE_PRESENT)) {
 		return 0;
 	}
 
@@ -157,7 +188,7 @@ int ptbl_free(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		}
 	}
 
-	page_free(page);
+	page_decref(pa2page(PAGE_ADDR(*entry)));
 	*entry = 0;
 	
 	return 0;

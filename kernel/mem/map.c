@@ -45,7 +45,7 @@ static int boot_map_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 {
 	struct boot_map_info *info = walker->udata;
 	/* LAB 2: your code here. */
-	if(end - base + 1 == HPAGE_SIZE && hpage_aligned(info->pa)) {
+	if( base >= info->base && end <= info->end && hpage_aligned(info->pa)) {
 		*entry = info->pa | info->flags | PAGE_HUGE;
 		info->pa += HPAGE_SIZE;
 		return 0;
@@ -125,7 +125,7 @@ void boot_map_mmap(struct page_table *pml4, struct boot_info *boot_info) {
 		if (entry->type == MMAP_FREE) {
 			flags = PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC;
 		} else {
-			flags = PAGE_PRESENT;;
+			flags = PAGE_PRESENT | PAGE_NO_EXEC;
 		}
 		uintptr_t start = entry->addr;
 		uintptr_t len = entry->len;
