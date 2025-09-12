@@ -218,16 +218,6 @@ void page_init(struct boot_info *boot_info)
 		struct page_info *pi = pa2page(PADDR(p));
 		pi->pp_ref = 1;
 	}
-	// physaddr_t reserved_start_pa = page2pa(pages);
-    // physaddr_t reserved_end_pa = page2pa(pages) + (npages * sizeof *pages);
-    // for (i = 0; i < npages; ++i) {
-    //     page = &pages[i];
-    //     physaddr_t current_pa = page2pa(page);
-    //     if (current_pa >= reserved_start_pa && current_pa < reserved_end_pa) {
-    //         page->pp_ref = 1;
-	// 		page->pp_avail = 1;
-    //     }
-    // }
 
 	/* Go through the pages reserved for VGA memory (for use in the console),
 	 * and mark all of them to be available.
@@ -328,7 +318,6 @@ void page_init_ext(struct boot_info *boot_info)
                     panic("page_init_ext: buddy_grow failed");
                 }
             }
-            // page = &pages[idx];
 			page = pa2page(pa);
             page->pp_avail = 1;
 			page->pp_zero = 0;
@@ -336,10 +325,6 @@ void page_init_ext(struct boot_info *boot_info)
 			page->pp_order = 0;
 			page->pp_free = 0;
 			page_free(page);
-
-            // if (page->pp_ref == 0) {
-            //     page_free(page);
-            // }
         }
 
 	}

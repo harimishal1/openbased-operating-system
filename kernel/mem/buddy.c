@@ -15,8 +15,6 @@
 size_t npages;
 struct page_info *pages;
 
-extern uint32_t fucker;
-
 /*
  * List of free buddy chunks (often also referred to as buddy pages or simply
  * pages). Each order has a list containing all free buddy chunks of the
@@ -286,11 +284,6 @@ void page_free(struct page_info *pp)
  */
 void page_decref(struct page_info *pp)
 {
-	// Sanity check to help catch some sneaky bugs
-	if (pp->pp_ref == 0) {
-		panic("The page is %p\n", page2pa(pp));
-		// panic("the fucker is %d\n", fucker);
-	}
 	assert(pp->pp_ref > 0);
 	if (--pp->pp_ref == 0) {
 		page_free(pp);

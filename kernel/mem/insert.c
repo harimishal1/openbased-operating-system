@@ -17,8 +17,6 @@ struct insert_info {
 	uint64_t flags;
 };
 
-uint32_t fucker = 0;
-
 /* If the PTE already points to a present page, the reference count of the page
  * gets decremented and the TLB gets invalidated. Then this function increments
  * the reference count of the new page and sets the PTE to the new page with
@@ -34,16 +32,10 @@ static int insert_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	}
 
 	/* LAB 2: your code here. */
-	// if (pa2page(PAGE_ADDR(*entry)) == info->page) {
-	// 	tlb_invalidate((struct page_table*)read_cr3(), (void *)(base));
-	// 	return 0;
-	// }
 	info->page->pp_ref++;
 	if (*entry & PAGE_PRESENT) {
-		fucker = 1;
 		page_decref(pa2page(PAGE_ADDR(*entry)));
 		*entry = 0;
-		//tlb_invalidate(info->pml4, (void *)base);
 		tlb_invalidate((struct page_table*)read_cr3(), (void *)(base));
 	}
 	
@@ -68,9 +60,6 @@ static int insert_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 
 	/* LAB 2: your code here. */
 	if ((*entry & PAGE_PRESENT) && (*entry & PAGE_HUGE)) {
-			fucker = 2;
-			// *entry = 0;
-			// tlb_invalidate((struct page_table*)read_cr3(), (void *)(base));
 
 			if (info->flags & PAGE_HUGE) {
 				info->page->pp_ref++;
@@ -161,21 +150,6 @@ int page_insert(struct page_table *pml4, struct page_info *page, void *va,
 	info.page = page;
 	info.flags = flags | PAGE_PRESENT;
 	int size = (flags & PAGE_HUGE) ? HPAGE_SIZE : PAGE_SIZE;
-	/*physaddr_t *entry_insert;
-	/page_lookup(pml4,va, &entry_insert);
- 	if(*entry_insert & PAGE_PRESENT){
-		page_decref(pa2page(PAGE_ADDR(*entry_insert)));
-		*entry_insert = 0;
-		tlb_invalidate((struct page_table*)read_cr3(), va);
-	}
-	else{
-		page = page_alloc(page->pp_order);
-		if (!page) {
-			return -1;
-		}
-		page->pp_ref++;
-		info.page = page;
-	} */
 	if (walk_page_range(pml4, va, (void *)((uintptr_t)va + size), &walker) < 0) {
 		return -1;
 	}

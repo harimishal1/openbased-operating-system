@@ -9,7 +9,6 @@
 #include <paging.h>
 
 #include <kernel/mem.h>
-extern uint32_t fucker;
 
 /* Allocates a page table if none is present for the given entry.
  * If there is already something present in the PTE, then this function simply
@@ -162,11 +161,9 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		}
 		for(size_t i = 0; i < PAGE_TABLE_ENTRIES; i++){
 			struct page_info *page = pa2page(PAGE_ADDR(ptbl->entries[i]));
-			fucker = 3;
 			// page_free(page);
 			page_decref(page);
 		}
-		fucker = 4;
 		page_decref(pt);
 		return 0;
 }
