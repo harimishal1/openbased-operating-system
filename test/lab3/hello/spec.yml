@@ -1,0 +1,12 @@
+name: Hello, World!
+description: This is a basic test of userspace programs that perform simple syscalls
+
+required: true
+
+matchlines:
+  - '[PID     0] New task with PID 1'
+  - 'Hello, world!'
+  - 'We are number 1!'
+  - '[PID     1] Exiting gracefully with code 0'
+  - '[PID     1] Freed task with PID 1'
+  - 'Destroyed the only task - nothing more to do!'

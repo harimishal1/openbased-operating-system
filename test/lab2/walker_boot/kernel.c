@@ -30,7 +30,7 @@ static int run_test() {
 		panic("[TEST] Page Table Dump exited with %d", ret);
 
 	cprintf("[TEST] Dumping two huge pages\n");
-	ret = dump_page_tables_range((void *) read_cr3(), PAGE_HUGE, (void *) (KERNEL_VMA + 2 * HPAGE_SIZE), (void *) (KERNEL_VMA + 2 * HPAGE_SIZE + 1));
+	ret = dump_page_tables_range((void *) read_cr3(), PAGE_HUGE, (void *) (KERNEL_VMA + 2 * HPAGE_SIZE), (void *) (KERNEL_VMA + 3 * HPAGE_SIZE + 1));
 	if (ret < 0)
 		panic("[TEST] Page Table Dump exited with %d", ret);
 

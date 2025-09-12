@@ -1,0 +1,12 @@
+name: SYSCALL - Hello, World!
+description: This test asserts that syscall is used instead of interrupts for
+  user-space system calls.
+bonus: SYSCALL
+
+matchlines:
+  - '[PID     0] New task with PID 1'
+  - 'Hello, world!'
+  - 'We are number 1!'
+  - '[PID     1] Exiting gracefully with code 0'
+  - '[PID     1] Freed task with PID 1'
+  - 'Destroyed the only task - nothing more to do!'

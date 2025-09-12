@@ -1,0 +1,5 @@
+name: Kernel Fault - Execute NULL
+description: Tests whether page faults for the kernel are handled and
+  recognized correctly.
+
+should_panic: true

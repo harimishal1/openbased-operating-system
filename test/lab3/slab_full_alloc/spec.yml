@@ -1,0 +1,4 @@
+name: Slab - Full Slab Allocation
+description: Checks behaviour of slab allocator when fully allocating an entire slab
+
+required: true

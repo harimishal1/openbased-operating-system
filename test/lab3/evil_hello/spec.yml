@@ -1,0 +1,11 @@
+name: Evil - Hello World
+description: Evil Hello World that tries to print a kernel address
+
+required: true
+
+matchlines:
+  - '[PID     1] Access violation for va 0xffff800000100000'
+  - '[PID     1] Freed task with PID 1'
+
+noregexlines:
+  - '\[PID     1\] Exiting gracefully with code .*'

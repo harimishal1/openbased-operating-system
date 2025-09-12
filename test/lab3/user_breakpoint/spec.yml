@@ -1,0 +1,13 @@
+name: User Code - Trigger Breakpoint
+description: Trigger and handle a breakpoint using interrupt 3
+
+required: true
+
+regexlines:
+  - 'Incoming INT frame at 0xfffffe7fffffff..'
+
+noregexlines:
+  - '^INT frame at 0xf.......'
+  - ' INT 3: Breakpoint \(#BP\)'
+  - ' RIP 0x00000000008..... RFL 0x.{16}'
+  - ' CS  0x0023             DS  0x001b             SS  0x001b'

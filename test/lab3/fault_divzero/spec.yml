@@ -1,0 +1,14 @@
+name: User Fault - Divide by Zero
+description: Tests proper handling of divide-by-zero errors
+
+required: true
+
+matchlines:
+  - '[PID     1] Freed task with PID 1'
+
+regexlines:
+  - 'Incoming INT frame at 0xfffffe7fffffff..'
+  - 'INT frame at 0xf.......'
+  - ' INT 0: Divide-by-Zero Error Exception \(#DE\)'
+  - ' RIP 0x00000000008..... RFL 0x.{16}'
+  - ' CS  0x0023             DS  0x001b             SS  0x001b'

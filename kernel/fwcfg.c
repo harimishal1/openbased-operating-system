@@ -4,6 +4,7 @@
 #include <x86-64/asm.h>
 #include <kernel/fwcfg.h>
 
+#include <kernel/mem/kmem.h>
 
 struct fwcfg_file fwcfg_files[FW_CFG_MAX_FILES];
 uint32_t fwcfg_file_count = 0;
@@ -93,3 +94,14 @@ int fwcfg_read(const char *name, char *buf, int n) {
 	return fwcfg_read_file(file, buf);
 }
 
+int fwcfg_read_alloc(const char *name, char **buf) {
+	// First, find the size of the file
+	int file_index = fwcfg_find_file(name);
+	if(file_index < 0)
+		return file_index;
+
+	// Allocate buffer and read the file into it
+	struct fwcfg_file file = fwcfg_files[file_index];
+	*buf = kmalloc(file.size);
+	return fwcfg_read_file(file, *buf);
+}

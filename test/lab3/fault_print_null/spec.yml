@@ -1,0 +1,9 @@
+name: User Fault - Printing NULL
+description: Trying to print the NULL string
+
+regexlines:
+  - '.PID     1. Access violation for va 0x0'
+  - '.PID     1. Freed task with PID 1'
+
+noregexlines:
+  - '\[PID     1\] Exiting gracefully with code .*'

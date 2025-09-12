@@ -1,0 +1,15 @@
+name: Evil - User Kernel Read
+description: Trying to read from kernel memory as user
+
+required: true
+
+regexlines:
+- '.PID     1. user fault va 0xffff800000100000 ip 0x8.....'
+- 'Incoming INT frame at 0xfffffe7fffffff..'
+- 'INT frame at 0xf.......'
+- ' INT 14: Page Fault \(#PF\)'
+- ' ERR 0x0000000000000005.*'
+- '.PID     1. Freed task with PID 1'
+
+noregexlines:
+  - '\[PID     1\] Exiting gracefully with code .*'

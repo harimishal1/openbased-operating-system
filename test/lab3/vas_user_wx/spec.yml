@@ -1,0 +1,4 @@
+name: Virtual Address Space - W^X Exclusion
+description: Checks that no page table entries have both write and execute flags set.
+
+required: true

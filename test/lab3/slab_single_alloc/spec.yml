@@ -1,0 +1,4 @@
+name: Slab - Single Allocation
+description: Checks behaviour of slab allocator when allocating a single item in a slab
+
+required: true
