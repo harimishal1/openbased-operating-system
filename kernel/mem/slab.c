@@ -65,9 +65,9 @@ int slab_alloc_chunk(struct slab *slab)
 	for (i = 0; i < slab->count; ++i) {
 		obj = (struct slab_obj *)(base + i * slab->obj_size);
 		obj->info = info;
-		list_add_tail(&info->free_list, &obj->node);
+		list_add(&info->free_list, &obj->node);
 	}
-	list_add_tail(&slab->partial, &info->node);
+	list_add(&slab->partial, &info->node);
  
 	return 0;
 }
