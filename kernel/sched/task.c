@@ -1,4 +1,8 @@
 
+#include "kernel/sched/task.h"
+#include "elf.h"
+#include "kernel/mem/protect.h"
+#include "x86-64/memory.h"
 #include <error.h>
 #include <string.h>
 #include <paging.h>
@@ -67,6 +71,8 @@ void task_init(void)
 	 * to tasks.
 	 */
 	/* LAB 3: your code here. */
+
+	memset((void *)PIDMAP_BASE, 0, pid_max * sizeof(struct task *));
 }
 
 /* Sets up the virtual address space for the task. */
@@ -88,6 +94,8 @@ static int task_setup_vas(struct task *task)
 	 */
 
 	/* LAB 3: your code here. */
+	task->task_pml4 = (struct page_table *)page2kva(page);
+	memcpy(task->task_pml4 + PAGE_TABLE_ENTRIES / 2, kernel_pml4 + PAGE_TABLE_ENTRIES / 2, PAGE_SIZE / 2);
 	return 0;
 }
 
@@ -188,14 +196,46 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 	 */
 
 	/* LAB 3: your code here. */
+	struct elf *elf_binary = (struct elf *)binary;
+	if (elf_binary->e_magic != ELF_MAGIC) {
+		panic("magic number is wrong");
+	}
+
+	struct elf_proghdr *program_header = (struct elf_proghdr *)(binary + elf_binary->e_phoff);
+
+	for (size_t i = 0; i < elf_binary->e_phnum; i++) {
+		
+		uint64_t va = program_header[i].p_va;
+		uint64_t memsz = program_header[i].p_memsz;
+		uint64_t filesz = program_header[i].p_filesz;
+
+		if (program_header[i].p_type != ELF_PROG_LOAD) {
+			continue;
+		}
+		if (memsz < filesz) {
+			panic("p_memsz is smaller than p_filesz");
+		}
+
+		int flags = 0;
+		flags |= (PAGE_PRESENT | PAGE_USER);
+		if (program_header[i].p_flags & ELF_PROG_FLAG_WRITE) flags |= PAGE_WRITE;
+		if (!(program_header[i].p_flags & ELF_PROG_FLAG_EXEC)) flags |= PAGE_NO_EXEC;
+
+		populate_region(task->task_pml4, (void *)va, memsz, PAGE_PRESENT);
+		protect_region(task->task_pml4, (void *)va, memsz, flags);
+		// memset(program_header[i].p_va, 0, program_header[i].p_memsz);
+		memcpy((void *)va, binary + program_header[i].p_offset, filesz);
+		memset((void *)(va + filesz), 0, memsz - filesz);
+	}
+
+	task->task_frame.rip = elf_binary->e_entry;
 
 	/* Now map one page for the program's initial stack at virtual address
 	 * USTACK_TOP - PAGE_SIZE.
 	 */
 
 	/* LAB 3: your code here. */
-
-
+	populate_region(task->task_pml4, (void *)(USTACK_TOP - PAGE_SIZE), PAGE_SIZE, PAGE_PRESENT | PAGE_USER | PAGE_WRITE | PAGE_NO_EXEC);
 }
 
 /* Allocates a new task with task_alloc(), loads the named ELF binary using
@@ -208,6 +248,17 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 void task_create(uint8_t *binary, enum task_type type)
 {
 	/* LAB 3: your code here. */
+	struct task *task = task_alloc(0);
+	if (!task) {
+		panic("couldnt allocate task");
+	}
+
+	task_load_elf (task, binary);
+	task->task_type = type;
+
+	if (type == TASK_TYPE_USER) {
+		nuser_tasks++;
+	}
 }
 
 /* Free the task and all of the memory that is used by it.
@@ -296,10 +347,21 @@ void task_run(struct task *task)
 	 */
 
 	/* LAB 3: Your code here. */
-	panic("task_run() not yet implemented");
+	// panic("task_run() not yet implemented");
 
+	// step 1
+	if (task != cur_task) {
+		if (cur_task->task_status == TASK_RUNNING) {
+			cur_task->task_status = TASK_RUNNABLE;
+		}
+		cur_task = task;
+		cur_task->task_status = TASK_RUNNING;
+		cur_task->task_runs++;
+		load_pml4(cur_task->task_pml4);
+	}
 
-
+	// step 2
+	task_pop_frame(&cur_task->task_frame);
 }
 
 /*
