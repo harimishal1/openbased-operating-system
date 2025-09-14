@@ -19,6 +19,15 @@ static int protect_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct protect_info *info = walker->udata;
 
 	/* LAB 3: your code here. */
+	if (*entry & PAGE_PRESENT) {
+		if ((*entry & PAGE_MASK) == info->flags) {
+			 return 0;
+		}
+
+		*entry = *entry & ~PAGE_MASK;
+		*entry = *entry | info->flags;
+		tlb_invalidate(info->pml4, (void *)(base));
+	}
 	return 0;
 }
 
@@ -34,6 +43,22 @@ static int protect_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct protect_info *info = walker->udata;
 
 	/* LAB 3: your code here. */
+	if ((*entry & PAGE_HUGE) && (*entry & PAGE_PRESENT)) {
+		if (base == info->base && end == info->end) {
+			if ((*entry & PAGE_MASK) == info->flags) {
+				return 0;
+			} else {
+				*entry = *entry & ~PAGE_MASK;
+				*entry = *entry | info->flags;
+				tlb_invalidate(info->pml4, (void *) (base & ~(PAGE_TABLE_SPAN - 1)));
+				return 0;
+			}
+		} else {
+			ptbl_split(entry, base & ~(PAGE_TABLE_SPAN - 1), end | (PAGE_TABLE_SPAN - 1), walker);
+			tlb_invalidate(info->pml4, (void *) (base & ~(PAGE_TABLE_SPAN - 1)));
+			return 0;
+		}
+	}
 	return 0;
 }
 
