@@ -69,7 +69,7 @@ static int sys_exit(int rcode)
 	struct task *task;
 
 	/* LAB 3: your code here */
-
+	task = NULL;	
 
 	cprintf("[PID %5u] Exiting gracefully with code %d\n", task->task_pid, rcode);
 

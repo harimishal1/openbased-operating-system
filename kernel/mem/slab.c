@@ -1,4 +1,6 @@
 
+#include "kernel/mem/buddy.h"
+#include "x86-64/paging.h"
 #include <types.h>
 #include <list.h>
 #include <paging.h>
@@ -48,6 +50,25 @@ int slab_alloc_chunk(struct slab *slab)
 	size_t i;
 
 	/* LAB 3: your code here. */
+
+	if (!(page = page_alloc(ALLOC_ZERO)))
+		return -1;
+
+	page->pp_ref++;
+	base = page2kva(page);
+
+	info = (struct slab_info *)(base + slab->info_off);
+	info->slab = slab;
+	info->free_count = slab->count;
+	list_init(&info->node);
+	list_init(&info->free_list);
+	for (i = 0; i < slab->count; ++i) {
+		obj = (struct slab_obj *)(base + i * slab->obj_size);
+		obj->info = info;
+		list_add_tail(&info->free_list, &obj->node);
+	}
+	list_add_tail(&slab->partial, &info->node);
+ 
 	return 0;
 }
 
@@ -57,6 +78,11 @@ int slab_alloc_chunk(struct slab *slab)
 void slab_free_chunk(struct slab *slab, struct slab_info *info)
 {
 	/* LAB 3: your code here. */
+
+	uintptr_t base_kva = (uintptr_t)info & ~((uintptr_t)PAGE_SIZE - 1);
+	struct page_info *page = pa2page(PADDR((void *)base_kva));
+	list_del(&info->node);
+	page_decref(page);
 }
 
 /* Initializes a slab allocator for the given object size as follows:
