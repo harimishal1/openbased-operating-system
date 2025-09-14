@@ -1,4 +1,5 @@
 
+#include "kernel/mem/buddy.h"
 #include <types.h>
 #include <paging.h>
 
@@ -16,6 +17,15 @@ static int populate_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct populate_info *info = walker->udata;
 
 	/* LAB 3: your code here. */
+	page = page_alloc(ALLOC_ZERO);
+
+	if (!page) {
+		return -1;
+	}
+
+	page->pp_ref++;
+	page->pp_free = 0;
+	*entry = page2pa(page) | (info->flags);
 	return 0;
 }
 
@@ -26,6 +36,15 @@ static int populate_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct populate_info *info = walker->udata;
 
 	/* LAB 3: your code here. */
+	page = page_alloc(ALLOC_ZERO);
+
+	if (!page) {
+		return -1;
+	}
+	page->pp_ref++;
+	page->pp_free = 0;
+	*entry = page2pa(page) | (info->flags);
+	
 	return 0;
 }
 
@@ -45,7 +64,20 @@ void populate_region(struct page_table *pml4, void *va, size_t size,
 		.pte_callback = populate_pte,
 		.pde_callback = populate_pde,
 		.udata = &info,
+		.pdpte_callback = ptbl_alloc,
+		.pml4e_callback = ptbl_alloc,
+		.pde_unmap = ptbl_merge,
 	};
+	
+	if (!page_aligned((uintptr_t)(va))) {
+		return;
+	}
+
+	if(flags & PAGE_HUGE) {
+		if ((size % HPAGE_SIZE) != 0) {
+			return;
+		}
+	}
 
 	walk_page_range(pml4, va, (void *)((uintptr_t)va + size), &walker);
 }
