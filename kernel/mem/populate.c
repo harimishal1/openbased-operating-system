@@ -1,5 +1,6 @@
 
 #include "kernel/mem/buddy.h"
+#include "x86-64/paging.h"
 #include <types.h>
 #include <paging.h>
 
@@ -17,6 +18,9 @@ static int populate_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct populate_info *info = walker->udata;
 
 	/* LAB 3: your code here. */
+	if (*entry & PAGE_PRESENT) {
+		return -1; 
+	}
 	page = page_alloc(ALLOC_ZERO);
 
 	if (!page) {
@@ -25,7 +29,7 @@ static int populate_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 
 	page->pp_ref++;
 	page->pp_free = 0;
-	*entry = page2pa(page) | (info->flags);
+	*entry = page2pa(page) | (info->flags) | PAGE_PRESENT | PAGE_SIZE;
 	return 0;
 }
 
@@ -36,15 +40,24 @@ static int populate_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct populate_info *info = walker->udata;
 
 	/* LAB 3: your code here. */
+	if (*entry & PAGE_PRESENT) {
+		return -1; 
+	}
+
 	page = page_alloc(ALLOC_ZERO);
 
 	if (!page) {
-		return -1;
+		return -1; 
 	}
+	
 	page->pp_ref++;
 	page->pp_free = 0;
-	*entry = page2pa(page) | (info->flags);
-	
+
+	if ((info->flags & PAGE_HUGE) && (end - base + 1) == HPAGE_SIZE) {
+		*entry = page2pa(page) | info->flags | PAGE_PRESENT | PAGE_HUGE; 
+	} else {
+		*entry = page2pa(page) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER; 
+	}
 	return 0;
 }
 

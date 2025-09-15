@@ -1,8 +1,10 @@
 
 #include "kernel/sched/task.h"
 #include "elf.h"
+#include "kernel/mem/init.h"
 #include "kernel/mem/protect.h"
 #include "x86-64/memory.h"
+#include "x86-64/types.h"
 #include <error.h>
 #include <string.h>
 #include <paging.h>
@@ -72,6 +74,7 @@ void task_init(void)
 	 */
 	/* LAB 3: your code here. */
 
+	populate_region(kernel_pml4, (void *)PIDMAP_BASE, pid_max * sizeof(struct task *), PAGE_PRESENT | PAGE_WRITE);
 	memset((void *)PIDMAP_BASE, 0, pid_max * sizeof(struct task *));
 }
 
@@ -94,8 +97,15 @@ static int task_setup_vas(struct task *task)
 	 */
 
 	/* LAB 3: your code here. */
+	page->pp_free = 0;
 	task->task_pml4 = (struct page_table *)page2kva(page);
-	memcpy(task->task_pml4 + PAGE_TABLE_ENTRIES / 2, kernel_pml4 + PAGE_TABLE_ENTRIES / 2, PAGE_SIZE / 2);
+	
+	size_t half = PAGE_TABLE_ENTRIES / 2;
+	physaddr_t *dst = task->task_pml4->entries;
+	physaddr_t *src = kernel_pml4->entries;
+
+	memcpy(&dst[half], &src[half], PAGE_SIZE / 2);
+
 	return 0;
 }
 
