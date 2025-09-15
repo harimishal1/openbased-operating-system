@@ -41,7 +41,7 @@ static int populate_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 
 	/* LAB 3: your code here. */
 	if (*entry & PAGE_PRESENT) {
-		return -1; 
+		return 0; 
 	}
 
 	page = page_alloc(ALLOC_ZERO);
@@ -92,6 +92,9 @@ void populate_region(struct page_table *pml4, void *va, size_t size,
 		}
 	}
 
+	if ((flags & PAGE_HUGE) && !hpage_aligned((uintptr_t)(va))) {
+		return;
+	}
+
 	walk_page_range(pml4, va, (void *)((uintptr_t)va + size), &walker);
 }
-
