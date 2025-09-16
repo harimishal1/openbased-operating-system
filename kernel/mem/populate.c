@@ -19,7 +19,6 @@ static int populate_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct populate_info *info = walker->udata;
 
 	/* LAB 3: your code here. */
-	//cprintf("gets to populate");
 	if (*entry & PAGE_PRESENT) {
 		return 0; 
 	}
@@ -30,7 +29,7 @@ static int populate_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	}
 
 	page->pp_ref++;
-	*entry = page2pa(page) | (info->flags) | PAGE_PRESENT;
+	*entry = page2pa(page) | (info->flags) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER | PAGE_NO_EXEC;
 	return 0;
 }
 
@@ -41,16 +40,15 @@ static int populate_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct populate_info *info = walker->udata;
 
 	/* LAB 3: your code here. */
-	if (*entry & PAGE_PRESENT && *entry & PAGE_HUGE) { //fix this if block
+	if (*entry & PAGE_PRESENT && *entry & PAGE_HUGE) { 
 		return 0; 
 	}
 	if(info->base <= base && info->end >= end) {
-		//cprintf("huge pag
 		page = page_alloc(ALLOC_ZERO | ALLOC_HUGE);
 		if (!page) 
 			return -1; 
 		page->pp_ref++;
-		*entry = page2pa(page) | info->flags | PAGE_PRESENT | PAGE_HUGE; 
+		*entry = page2pa(page) | info->flags | PAGE_PRESENT | PAGE_HUGE | PAGE_WRITE | PAGE_USER | PAGE_NO_EXEC; 
 	} else {
 		return ptbl_split(entry, base, end, walker);
 	}

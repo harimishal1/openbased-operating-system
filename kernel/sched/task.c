@@ -77,7 +77,8 @@ void task_init(void)
 	 */
 	/* LAB 3: your code here. */
 
-	populate_region(kernel_pml4, (void *)PIDMAP_BASE, pid_max * sizeof(struct task *), PAGE_PRESENT | PAGE_WRITE);
+	populate_region(kernel_pml4, (void *)PIDMAP_BASE, pid_max * sizeof(struct task *), 
+	PAGE_PRESENT | PAGE_WRITE);
 	memset((void *)PIDMAP_BASE, 0, pid_max * sizeof(struct task *));
 }
 
@@ -107,8 +108,6 @@ static int task_setup_vas(struct task *task)
 	physaddr_t *dst = task->task_pml4->entries;
 	physaddr_t *src = kernel_pml4->entries;
 	
-	//memcpy(&dst[0], &src[0], PAGE_SIZE / 2);
-
 	memcpy(&dst[half], &src[half], PAGE_SIZE / 2);
 
 	return 0;
@@ -231,15 +230,23 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 			panic("p_memsz is smaller than p_filesz");
 		}
 
-		int flags = program_header[i].p_flags;
-		flags |= (PAGE_PRESENT | PAGE_USER);
-		if (program_header[i].p_flags & ELF_PROG_FLAG_WRITE) flags |= PAGE_WRITE | PAGE_NO_EXEC;
-		if (!(program_header[i].p_flags & ELF_PROG_FLAG_EXEC)) flags |= PAGE_NO_EXEC;
+		//uint64_t flags = program_header[i].p_flags;
+		uint64_t flags = (PAGE_PRESENT | PAGE_USER);
+
+		if (program_header[i].p_flags & ELF_PROG_FLAG_WRITE){ 
+			flags |= PAGE_WRITE | PAGE_NO_EXEC;
+		}
+		
+		if (!(program_header[i].p_flags & ELF_PROG_FLAG_EXEC)){ 
+			flags |= PAGE_NO_EXEC;
+		}
 
 		populate_region(task->task_pml4, (void *)va, memsz, flags);
 		load_pml4((struct page_table*)PADDR(task->task_pml4));
 		memcpy((void *)va, binary + program_header[i].p_offset, filesz);
-		memset((void *)(va + filesz), 0, memsz - filesz);
+		if(memsz > filesz){
+			memset((void *)(va + filesz), 0, memsz - filesz);
+		}
 		load_pml4((struct page_table*)PADDR(kernel_pml4));
 		protect_region(task->task_pml4, (void *)va, memsz, flags);
 

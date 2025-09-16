@@ -1,4 +1,5 @@
 
+#include "x86-64/paging.h"
 #include <types.h>
 #include <paging.h>
 
@@ -23,7 +24,6 @@ static int protect_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		if ((*entry & PAGE_MASK) == info->flags) {
 			 return 0;
 		}
-
 		*entry = *entry & ~PAGE_MASK;
 		*entry = *entry | info->flags;
 		tlb_invalidate(info->pml4, (void *)(base));
@@ -81,6 +81,7 @@ void protect_region(struct page_table *pml4, void *va, size_t size,
 		.udata = &info,
 	};
 
+	
 	walk_page_range(pml4, va, (void *)((uintptr_t)va + size), &walker);
 }
 
