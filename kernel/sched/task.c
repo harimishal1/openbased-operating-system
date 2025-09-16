@@ -1,9 +1,12 @@
 
 #include "kernel/sched/task.h"
 #include "elf.h"
+#include "kernel/mem/buddy.h"
 #include "kernel/mem/init.h"
 #include "kernel/mem/protect.h"
+#include "stdio.h"
 #include "x86-64/memory.h"
+#include "x86-64/paging.h"
 #include "x86-64/types.h"
 #include <error.h>
 #include <string.h>
@@ -103,6 +106,8 @@ static int task_setup_vas(struct task *task)
 	size_t half = PAGE_TABLE_ENTRIES / 2;
 	physaddr_t *dst = task->task_pml4->entries;
 	physaddr_t *src = kernel_pml4->entries;
+	
+	//memcpy(&dst[0], &src[0], PAGE_SIZE / 2);
 
 	memcpy(&dst[half], &src[half], PAGE_SIZE / 2);
 
@@ -226,16 +231,18 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 			panic("p_memsz is smaller than p_filesz");
 		}
 
-		int flags = 0;
+		int flags = program_header[i].p_flags;
 		flags |= (PAGE_PRESENT | PAGE_USER);
-		if (program_header[i].p_flags & ELF_PROG_FLAG_WRITE) flags |= PAGE_WRITE;
+		if (program_header[i].p_flags & ELF_PROG_FLAG_WRITE) flags |= PAGE_WRITE | PAGE_NO_EXEC;
 		if (!(program_header[i].p_flags & ELF_PROG_FLAG_EXEC)) flags |= PAGE_NO_EXEC;
 
-		populate_region(task->task_pml4, (void *)va, memsz, PAGE_PRESENT);
-		protect_region(task->task_pml4, (void *)va, memsz, flags);
-		// memset(program_header[i].p_va, 0, program_header[i].p_memsz);
+		populate_region(task->task_pml4, (void *)va, memsz, flags);
+		load_pml4((struct page_table*)PADDR(task->task_pml4));
 		memcpy((void *)va, binary + program_header[i].p_offset, filesz);
 		memset((void *)(va + filesz), 0, memsz - filesz);
+		load_pml4((struct page_table*)PADDR(kernel_pml4));
+		protect_region(task->task_pml4, (void *)va, memsz, flags);
+
 	}
 
 	task->task_frame.rip = elf_binary->e_entry;
@@ -245,7 +252,8 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 	 */
 
 	/* LAB 3: your code here. */
-	populate_region(task->task_pml4, (void *)(USTACK_TOP - PAGE_SIZE), PAGE_SIZE, PAGE_PRESENT | PAGE_USER | PAGE_WRITE | PAGE_NO_EXEC);
+	populate_region(task->task_pml4, (void *)(USTACK_TOP - PAGE_SIZE), PAGE_SIZE, 
+	PAGE_PRESENT | PAGE_USER | PAGE_WRITE | PAGE_NO_EXEC);
 }
 
 /* Allocates a new task with task_alloc(), loads the named ELF binary using
@@ -316,7 +324,7 @@ void task_destroy(struct task *task)
  * instruction. This exits the kernel and starts executing the code of some
  * task.
  *
- * This function does not return.
+ * This function does not return. 
  */
 void task_pop_frame(struct int_frame *frame)
 {
