@@ -76,7 +76,7 @@ void task_init(void)
 	 * to tasks.
 	 */
 	/* LAB 3: your code here. */
-	size_t size = pid_max * sizeof(struct task *);
+	/* size_t size = pid_max * sizeof(struct task *);
 	size_t npages = ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE;
 	struct page_info *page;
 	size_t i;
@@ -91,10 +91,10 @@ void task_init(void)
 			panic("task_init: page_insert failed\n");
 		}
 	}
-	memset(tasks, 0, size);
-	/* populate_region(kernel_pml4, (void *)PIDMAP_BASE, pid_max * sizeof(struct task *), 
+	memset(tasks, 0, size); */
+	populate_region(kernel_pml4, (void *)PIDMAP_BASE, pid_max * sizeof(struct task *), 
 	PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
-	memset((void *)PIDMAP_BASE, 0, pid_max * sizeof(struct task *)); */
+	memset((void *)PIDMAP_BASE, 0, pid_max * sizeof(struct task *));
 }
 
 /* Sets up the virtual address space for the task. */
