@@ -76,10 +76,25 @@ void task_init(void)
 	 * to tasks.
 	 */
 	/* LAB 3: your code here. */
-
-	populate_region(kernel_pml4, (void *)PIDMAP_BASE, pid_max * sizeof(struct task *), 
+	size_t size = pid_max * sizeof(struct task *);
+	size_t npages = ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE;
+	struct page_info *page;
+	size_t i;
+	for (i = 0; i < npages; i++) {
+		page = page_alloc(ALLOC_ZERO);
+		if (!page) {
+			panic("task_init: out of memory\n");
+		}
+		page->pp_ref++;
+		if (page_insert(kernel_pml4, page, (void *)(PIDMAP_BASE + i * PAGE_SIZE),
+		    PAGE_WRITE | PAGE_PRESENT | PAGE_NO_EXEC) < 0) {
+			panic("task_init: page_insert failed\n");
+		}
+	}
+	memset(tasks, 0, size);
+	/* populate_region(kernel_pml4, (void *)PIDMAP_BASE, pid_max * sizeof(struct task *), 
 	PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
-	memset((void *)PIDMAP_BASE, 0, pid_max * sizeof(struct task *));
+	memset((void *)PIDMAP_BASE, 0, pid_max * sizeof(struct task *)); */
 }
 
 /* Sets up the virtual address space for the task. */
@@ -101,7 +116,6 @@ static int task_setup_vas(struct task *task)
 	 */
 
 	/* LAB 3: your code here. */
-	page->pp_free = 0;
 	task->task_pml4 = (struct page_table *)page2kva(page);
 	
 	size_t half = PAGE_TABLE_ENTRIES / 2;
@@ -284,6 +298,10 @@ void task_create(uint8_t *binary, enum task_type type)
 	if (type == TASK_TYPE_USER) {
 		nuser_tasks++;
 	}
+
+	task->task_ppid = 0;
+	tasks[task->task_pid] = task;
+	return;
 }
 
 /* Free the task and all of the memory that is used by it.
@@ -376,16 +394,16 @@ void task_run(struct task *task)
 
 	// step 1
 	if (task != cur_task) {
-		if (cur_task->task_status == TASK_RUNNING) {
+		if (cur_task && cur_task->task_status == TASK_RUNNING) {
 			cur_task->task_status = TASK_RUNNABLE;
 		}
+
 		cur_task = task;
 		cur_task->task_status = TASK_RUNNING;
 		cur_task->task_runs++;
-		load_pml4(cur_task->task_pml4);
+		load_pml4((struct page_table *)PADDR(task->task_pml4));
 	}
 
-	// step 2
 	task_pop_frame(&cur_task->task_frame);
 }
 
