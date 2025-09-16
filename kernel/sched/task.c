@@ -78,7 +78,7 @@ void task_init(void)
 	/* LAB 3: your code here. */
 
 	populate_region(kernel_pml4, (void *)PIDMAP_BASE, pid_max * sizeof(struct task *), 
-	PAGE_PRESENT | PAGE_WRITE);
+	PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
 	memset((void *)PIDMAP_BASE, 0, pid_max * sizeof(struct task *));
 }
 
@@ -234,9 +234,9 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 		uint64_t flags = (PAGE_PRESENT | PAGE_USER);
 
 		if (program_header[i].p_flags & ELF_PROG_FLAG_WRITE){ 
-			flags |= PAGE_WRITE | PAGE_NO_EXEC;
+			flags |= (PAGE_WRITE | PAGE_NO_EXEC);
 		}
-		
+
 		if (!(program_header[i].p_flags & ELF_PROG_FLAG_EXEC)){ 
 			flags |= PAGE_NO_EXEC;
 		}

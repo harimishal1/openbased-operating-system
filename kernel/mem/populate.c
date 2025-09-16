@@ -29,7 +29,7 @@ static int populate_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	}
 
 	page->pp_ref++;
-	*entry = page2pa(page) | (info->flags) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER | PAGE_NO_EXEC;
+	*entry = page2pa(page) | (info->flags) | PAGE_PRESENT;
 	return 0;
 }
 
@@ -48,7 +48,7 @@ static int populate_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		if (!page) 
 			return -1; 
 		page->pp_ref++;
-		*entry = page2pa(page) | info->flags | PAGE_PRESENT | PAGE_HUGE | PAGE_WRITE | PAGE_USER | PAGE_NO_EXEC; 
+		*entry = page2pa(page) | info->flags | PAGE_PRESENT | PAGE_HUGE; 
 	} else {
 		return ptbl_split(entry, base, end, walker);
 	}

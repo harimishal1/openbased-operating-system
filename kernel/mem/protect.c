@@ -21,10 +21,10 @@ static int protect_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 
 	/* LAB 3: your code here. */
 	if (*entry & PAGE_PRESENT) {
-		if ((*entry & PAGE_MASK) == info->flags) {
+		if ((*entry & PAGE_UMASK) == info->flags) {
 			 return 0;
 		}
-		*entry = *entry & ~PAGE_MASK;
+		*entry = *entry & ~PAGE_UMASK;
 		*entry = *entry | info->flags;
 		tlb_invalidate(info->pml4, (void *)(base));
 	}
@@ -45,17 +45,17 @@ static int protect_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	/* LAB 3: your code here. */
 	if ((*entry & PAGE_HUGE) && (*entry & PAGE_PRESENT)) {
 		if (base == info->base && end == info->end) {
-			if ((*entry & PAGE_MASK) == info->flags) {
+			if ((*entry & PAGE_UMASK) == info->flags) {
 				return 0;
 			} else {
-				*entry = *entry & ~PAGE_MASK;
+				*entry = *entry & ~PAGE_UMASK;
 				*entry = *entry | info->flags;
-				tlb_invalidate(info->pml4, (void *) (base & ~(PAGE_TABLE_SPAN - 1)));
+				tlb_invalidate(info->pml4, (void *)(base));
 				return 0;
 			}
 		} else {
 			ptbl_split(entry, base & ~(PAGE_TABLE_SPAN - 1), end | (PAGE_TABLE_SPAN - 1), walker);
-			tlb_invalidate(info->pml4, (void *) (base & ~(PAGE_TABLE_SPAN - 1)));
+			tlb_invalidate(info->pml4, (void *) (base));
 			return 0;
 		}
 	}
@@ -80,7 +80,6 @@ void protect_region(struct page_table *pml4, void *va, size_t size,
 		.pde_callback = protect_pde,
 		.udata = &info,
 	};
-
 	
 	walk_page_range(pml4, va, (void *)((uintptr_t)va + size), &walker);
 }
