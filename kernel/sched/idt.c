@@ -33,6 +33,7 @@ extern void isr17(void);
 extern void isr18(void);
 extern void isr19(void);
 extern void isr30(void);
+extern void isr33(void);
 
 static const char *int_names[256] = {
 	[INT_DIVIDE] = "Divide-by-Zero Error Exception (#DE)",
@@ -54,6 +55,7 @@ static const char *int_names[256] = {
 	[INT_MCE] = "Machine Check (#MC)",
 	[INT_SIMD] = "SIMD Floating-Point (#XF)",
 	[INT_SECURITY] = "Security (#SX)",
+	[INT_SYSCALL] = "System Call(#SC)",
 };
 
 static struct idt_entry entries[256];
@@ -134,7 +136,7 @@ void idt_init(void)
 	set_idt_entry(&entries[INT_DIVIDE], (void *)isr0, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_DEBUG], (void *)isr1, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_NMI], (void *)isr2, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
-	set_idt_entry(&entries[INT_BREAK], (void *)isr3, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(3), GDT_KCODE);
+	set_idt_entry(&entries[INT_BREAK], (void *)isr3, IDT_TRAP_GATE32 | IDT_PRESENT | IDT_PRIVL(3), GDT_KCODE);
 	set_idt_entry(&entries[INT_OVERFLOW], (void *)isr4, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_BOUND], (void *)isr5, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_INVALID_OP], (void *)isr6, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
@@ -150,6 +152,7 @@ void idt_init(void)
 	set_idt_entry(&entries[INT_MCE], (void *)isr18, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_SIMD], (void *)isr19, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_SECURITY], (void *)isr30, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
+	set_idt_entry(&entries[INT_SYSCALL], (void *)isr33, IDT_TRAP_GATE32 | IDT_PRESENT | IDT_PRIVL(3), GDT_KCODE);
 	load_idt(&idtr);
 }
 
@@ -174,7 +177,7 @@ void int_dispatch(struct int_frame *frame)
 			page_fault_handler(frame);
 			return;
 		case INT_SYSCALL:
-			// syscall();
+			syscall(frame->rax,frame->rdi,frame->rsi,frame->rdx,frame->rcx, frame->r8, frame->r9);
 			break;
 		default: break;
 	}

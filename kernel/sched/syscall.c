@@ -89,10 +89,32 @@ int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 	 * Return any appropriate return value.
 	 */
 	/* LAB 3: your code here. */
+	/* SYS_cputs = 0,
+	SYS_cgetc,
+	SYS_getpid,
+	SYS_kill,
+	SYS_exit,
+	NSYSCALLS, */
+	int64_t ret;
 	panic("syscall not implemented");
 
 	switch (syscallno) {
-		default:
+		case 0:
+			sys_cputs((char*)a1, a2); 
+			return 0;
+		case 1: 
+			sys_cgetc();
+			return 0; 
+		case 2:
+			sys_getpid();
+			return 0; 
+		case 3:
+			sys_kill( a1); 
+			return 0; 
+		case 4: 
+			sys_exit(a1);
+			return 0; 
+		case 5:
 			return -ENOSYS;
 	}
 }
