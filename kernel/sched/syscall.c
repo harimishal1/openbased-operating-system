@@ -1,4 +1,5 @@
 
+#include "kernel/sched/task.h"
 #include "task.h"
 #include "x86-64/types.h"
 #include <error.h>
@@ -71,7 +72,7 @@ static int sys_exit(int rcode)
 	struct task *task;
 
 	/* LAB 3: your code here */
-	task = NULL;	
+	task = cur_task;	
 
 	cprintf("[PID %5u] Exiting gracefully with code %d\n", task->task_pid, rcode);
 
@@ -111,7 +112,7 @@ int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 		case NSYSCALLS:
 			return -ENOSYS;
 	}
-	return -1;
+	return ENOSYS;
 }
 
 void syscall_handler(uint64_t a1, uint64_t a2, uint64_t a3,

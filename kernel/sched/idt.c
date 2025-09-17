@@ -165,6 +165,7 @@ void int_dispatch(struct int_frame *frame)
 	 *  - Dispatch page faults to page_fault_handler().
 	 *  - Dispatch system calls to syscall().
 	 */
+	uint64_t ret;
 	switch (frame->int_no) {
 		/* LAB 3: your code here. */
 		case INT_BREAK:
@@ -177,7 +178,8 @@ void int_dispatch(struct int_frame *frame)
 			page_fault_handler(frame);
 			return;
 		case INT_SYSCALL:
-			syscall(frame->rax,frame->rdi,frame->rsi,frame->rdx,frame->rcx, frame->r8, frame->r9);
+			ret = syscall(frame->rax,frame->rdi,frame->rsi,frame->rdx,frame->rcx, frame->r8, frame->r9);
+			frame->rax = ret;
 			return;
 		default: break;
 	}
