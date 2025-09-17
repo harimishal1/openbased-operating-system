@@ -27,6 +27,29 @@ isr\int_no:
 
 /* LAB 3: your code here. */
 
+// 7-2 Vol. 3A
+ISR_NOERRCODE 0
+ISR_NOERRCODE 1
+ISR_NOERRCODE 2
+ISR_NOERRCODE 3
+ISR_NOERRCODE 4
+ISR_NOERRCODE 5
+ISR_NOERRCODE 6
+ISR_NOERRCODE 7
+ISR_ERRCODE 8
+ISR_NOERRCODE 9
+ISR_ERRCODE 10
+ISR_ERRCODE 11
+ISR_ERRCODE 12
+ISR_ERRCODE 13
+ISR_ERRCODE 14
+ISR_NOERRCODE 15
+ISR_NOERRCODE 16
+ISR_ERRCODE 17
+ISR_NOERRCODE 18
+ISR_NOERRCODE 19
+ISR_NOERRCODE 30
+
 isr_common_stub:
 	/* LAB 3: your code here. */
 	/* Save the register state on the stack. */
@@ -59,6 +82,28 @@ syscall64:
 iret64:
 	/* LAB 3: your code here. */
 	/* Restore the register state. */
+
+    movw    (%rdi), %ax
+    movw    %ax, %ds
+    movw    %ax, %es
+
+	lea     8(%rdi), %rsp
+
+    popq    %r15
+    popq    %r14
+    popq    %r13
+    popq    %r12
+    popq    %r11
+    popq    %r10
+    popq    %r9
+    popq    %r8
+    popq    %rdi
+    popq    %rsi
+    popq    %rbp
+    popq    %rbx
+    popq    %rdx
+    popq    %rcx
+    popq    %rax
 
 	/* Return from the interrupt. */
 	addq $16, %rsp
