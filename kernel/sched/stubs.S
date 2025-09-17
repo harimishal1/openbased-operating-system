@@ -76,13 +76,15 @@ isr_common_stub:
     pushq %r14
     pushq %r15
 
-	movq	$GDT_KDATA, %rax
-	pushq	%rax
+    movq $0, %rax
+    movw %ds, %ax
+    pushq %rax
 
 	/* Recover the segments. */
 
-	movw	%ax, %ds
-	movw	%ax, %es
+	movq $GDT_KDATA, %rax
+	movw %ax, %ds
+	movw %ax, %es
 
 	/* Jump to the generic interrupt handler. */
 	movq %rsp, %rdi

@@ -23,13 +23,11 @@ extern void isr5(void);
 extern void isr6(void);
 extern void isr7(void);
 extern void isr8(void);
-//extern void isr9(void);
 extern void isr10(void);
 extern void isr11(void);
 extern void isr12(void);
 extern void isr13(void);
 extern void isr14(void);
-//extern void isr15(void);
 extern void isr16(void);
 extern void isr17(void);
 extern void isr18(void);
@@ -166,6 +164,18 @@ void int_dispatch(struct int_frame *frame)
 	 */
 	switch (frame->int_no) {
 		/* LAB 3: your code here. */
+		case INT_BREAK:
+			monitor(frame);
+			return;
+		case INT_PANIC:
+			halt_kernel();
+			return;
+		case INT_PAGE_FAULT:
+			page_fault_handler(frame);
+			return;
+		case INT_SYSCALL:
+			// syscall();
+			break;
 		default: break;
 	}
 
