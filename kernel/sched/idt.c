@@ -178,7 +178,7 @@ void int_dispatch(struct int_frame *frame)
 			return;
 		case INT_SYSCALL:
 			syscall(frame->rax,frame->rdi,frame->rsi,frame->rdx,frame->rcx, frame->r8, frame->r9);
-			break;
+			return;
 		default: break;
 	}
 

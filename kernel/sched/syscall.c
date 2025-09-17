@@ -1,4 +1,6 @@
 
+#include "task.h"
+#include "x86-64/types.h"
 #include <error.h>
 #include <string.h>
 #include <assert.h>
@@ -89,34 +91,27 @@ int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 	 * Return any appropriate return value.
 	 */
 	/* LAB 3: your code here. */
-	/* SYS_cputs = 0,
-	SYS_cgetc,
-	SYS_getpid,
-	SYS_kill,
-	SYS_exit,
-	NSYSCALLS, */
-	int64_t ret;
-	panic("syscall not implemented");
+	//panic("syscall not implemented");
+	if ((unsigned)syscallno >= NSYSCALLS) {
+		return -ENOSYS;
+	}
 
 	switch (syscallno) {
-		case 0:
-			sys_cputs((char*)a1, a2); 
+		case SYS_cputs:
+			sys_cputs((const char*)a1, (size_t)a2); 
 			return 0;
-		case 1: 
-			sys_cgetc();
-			return 0; 
-		case 2:
-			sys_getpid();
-			return 0; 
-		case 3:
-			sys_kill( a1); 
-			return 0; 
-		case 4: 
-			sys_exit(a1);
-			return 0; 
-		case 5:
+		case SYS_cgetc: 
+			return (int64_t)sys_cgetc();
+		case SYS_getpid:
+			return (int64_t)sys_getpid();
+		case SYS_kill:
+			return (int64_t)sys_kill( (pid_t)a1); 
+		case SYS_exit: 
+			return (int64_t)sys_exit((int)a1);
+		case NSYSCALLS:
 			return -ENOSYS;
 	}
+	return -1;
 }
 
 void syscall_handler(uint64_t a1, uint64_t a2, uint64_t a3,
