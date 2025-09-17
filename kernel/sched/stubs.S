@@ -53,7 +53,38 @@ ISR_NOERRCODE 30
 isr_common_stub:
 	/* LAB 3: your code here. */
 	/* Save the register state on the stack. */
+
+/* struct int_frame {
+ 	uint64_t ds;
+ 	uint64_t r15, r14, r13, r12, r11, r10, r9, r8;
+ 	uint64_t rdi, rsi, rbp, rbx, rdx, rcx, rax;
+ 	uint64_t int_no, err_code;
+ 	uint64_t rip, cs, rflags, rsp, ss;
+ }; */
+
+    pushq %rax
+    pushq %rcx
+    pushq %rdx
+    pushq %rbx
+    pushq %rbp
+    pushq %rsi
+    pushq %rdi
+    pushq %r8
+    pushq %r9
+    pushq %r10
+    pushq %r11
+    pushq %r12
+    pushq %r13
+    pushq %r14
+    pushq %r15
+
+	movq	$GDT_KDATA, %rax
+	pushq	%rax
+
 	/* Recover the segments. */
+
+	movw	%ax, %ds
+	movw	%ax, %es
 
 	/* Jump to the generic interrupt handler. */
 	movq %rsp, %rdi
