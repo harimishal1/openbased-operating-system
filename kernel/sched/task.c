@@ -392,7 +392,6 @@ void task_run(struct task *task)
 	/* LAB 3: Your code here. */
 	// panic("task_run() not yet implemented");
 
-	// step 1
 	if (task != cur_task) {
 		if (cur_task && cur_task->task_status == TASK_RUNNING) {
 			cur_task->task_status = TASK_RUNNABLE;
