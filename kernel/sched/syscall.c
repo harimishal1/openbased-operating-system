@@ -1,6 +1,7 @@
 
 #include "kernel/sched/task.h"
 #include "task.h"
+#include "types.h"
 #include "x86-64/types.h"
 #include <error.h>
 #include <string.h>
@@ -75,6 +76,11 @@ static int sys_exit(int rcode)
 	/* LAB 3: your code here */
 	task = cur_task;	
 
+	if (!task) {
+		return -1;
+	}
+	task->task_exit_status = rcode;
+
 	cprintf("[PID %5u] Exiting gracefully with code %d\n", task->task_pid, rcode);
 
 	task_destroy(task);
@@ -110,8 +116,8 @@ int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 			return (int64_t)sys_kill( (pid_t)a1); 
 		case SYS_exit: 
 			return (int64_t)sys_exit((int)a1);
-		case NSYSCALLS:
-			return -ENOSYS;
+		default: 
+			break;
 	}
 	return ENOSYS;
 }

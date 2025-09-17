@@ -33,7 +33,8 @@ extern void isr17(void);
 extern void isr18(void);
 extern void isr19(void);
 extern void isr30(void);
-extern void isr33(void);
+extern void isr128(void);
+extern void isr127(void);
 
 static const char *int_names[256] = {
 	[INT_DIVIDE] = "Divide-by-Zero Error Exception (#DE)",
@@ -56,6 +57,7 @@ static const char *int_names[256] = {
 	[INT_SIMD] = "SIMD Floating-Point (#XF)",
 	[INT_SECURITY] = "Security (#SX)",
 	[INT_SYSCALL] = "System Call(#SC)",
+	[INT_PANIC] = "Panic",
 };
 
 static struct idt_entry entries[256];
@@ -133,11 +135,11 @@ void print_int_frame(struct int_frame *frame)
 void idt_init(void)
 {
 	/* LAB 3: your code here. */
-	set_idt_entry(&entries[INT_DIVIDE], (void *)isr0, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
+	set_idt_entry(&entries[INT_DIVIDE], (void *)isr0, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE); //
 	set_idt_entry(&entries[INT_DEBUG], (void *)isr1, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_NMI], (void *)isr2, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_BREAK], (void *)isr3, IDT_TRAP_GATE32 | IDT_PRESENT | IDT_PRIVL(3), GDT_KCODE);
-	set_idt_entry(&entries[INT_OVERFLOW], (void *)isr4, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
+	set_idt_entry(&entries[INT_OVERFLOW], (void *)isr4, IDT_TRAP_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_BOUND], (void *)isr5, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_INVALID_OP], (void *)isr6, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_DEVICE], (void *)isr7, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
@@ -145,17 +147,37 @@ void idt_init(void)
 	set_idt_entry(&entries[INT_TSS], (void *)isr10, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_NO_SEG_PRESENT], (void *)isr11, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_SS], (void *)isr12, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
-	set_idt_entry(&entries[INT_GPF], (void *)isr13, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
+	set_idt_entry(&entries[INT_GPF], (void *)isr13, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE); //
 	set_idt_entry(&entries[INT_PAGE_FAULT], (void *)isr14, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_FPU], (void *)isr16, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_ALIGNMENT], (void *)isr17, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_MCE], (void *)isr18, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_SIMD], (void *)isr19, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_SECURITY], (void *)isr30, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
-	set_idt_entry(&entries[INT_SYSCALL], (void *)isr33, IDT_TRAP_GATE32 | IDT_PRESENT | IDT_PRIVL(3), GDT_KCODE);
+	set_idt_entry(&entries[INT_SYSCALL], (void *)isr128, IDT_TRAP_GATE32 | IDT_PRESENT | IDT_PRIVL(3), GDT_KCODE);
+	set_idt_entry(&entries[INT_PANIC], (void *)isr127, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(3), GDT_KCODE);
 	load_idt(&idtr);
 }
 
+void gpf_handler(struct int_frame *frame)
+{
+	void *fault_va = (void *)read_cr2();
+	cprintf("[PID %5u] gpf fault va %p ip %p\n",
+		cur_task->task_pid, fault_va, frame->rip);
+	print_int_frame(frame);
+	task_destroy(cur_task);
+
+}
+
+void divide_handler(struct int_frame *frame)
+{
+	void *fault_va = (void *)read_cr2();
+	cprintf("[PID %5u] gpf fault va %p ip %p\n",
+		cur_task->task_pid, fault_va, frame->rip);
+	print_int_frame(frame);
+	task_destroy(cur_task);
+
+}
 
 void int_dispatch(struct int_frame *frame)
 {
@@ -180,6 +202,12 @@ void int_dispatch(struct int_frame *frame)
 		case INT_SYSCALL:
 			ret = syscall(frame->rax,frame->rdi,frame->rsi,frame->rdx,frame->rcx, frame->r8, frame->r9);
 			frame->rax = ret;
+			return;
+		case INT_GPF:
+			gpf_handler(frame);
+			return;
+		case INT_DIVIDE:
+			divide_handler(frame);
 			return;
 		default: break;
 	}
@@ -232,15 +260,17 @@ void page_fault_handler(struct int_frame *frame)
 	unsigned perm = 0;
 	int ret;
 
+
 	/* Read the CR2 register to find the faulting address. */
 	fault_va = (void *)read_cr2();
-
+	
 	/* Handle kernel-mode page faults. */
 	/* LAB 3: your code here. */
-	if((frame->err_code & 0x4) == 0){
-		panic("[PID %5u] Kernel page fault va %p ip=%p\n", 
-			cur_task->task_pid, fault_va, frame->rip);
-	}
+	if (frame->cs == GDT_KCODE) {
+        cprintf("Kernel page fault at va %p, ip %p\n", fault_va, frame->rip);
+        print_int_frame(frame);
+        panic("page fault in kernel mode");
+    }
 	/* We have already handled kernel-mode exceptions, so if we get here, the
 	 * page fault has happened in user mode.
 	 */
