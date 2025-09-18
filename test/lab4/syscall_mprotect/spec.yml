@@ -1,0 +1,12 @@
+name: Syscall - Basic mprotect() Test
+description: Simple mprotect tests to mark a page as executable
+
+regexlines:
+  - '0x0000000000804000 - 0x0000000001000000 .---. free'
+  - '0x0000000001000000 - 0x0000000001001000 .r-x. user'
+  - '0x0000000001001000 - 0x00007fffffffd000 .---. free'
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'
+
+noregexlines:
+  - '.PID     1. user fault va 0x1000000 ip 0x1000000'

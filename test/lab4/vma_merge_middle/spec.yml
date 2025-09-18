@@ -1,0 +1,7 @@
+name: VMA - Merge from the Middle
+description: Map three pages, the middle one last, should merge
+
+regexlines:
+  - '0x0000000001000000 - 0x0000000001003000 .r--. user'
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'

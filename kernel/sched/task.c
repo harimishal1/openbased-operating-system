@@ -314,6 +314,7 @@ void assert_user_mem(struct task *task, void *va, size_t size, int flags)
 {
 	uintptr_t fault_va;
 
+	/* LAB 4: your code here */
 
 	uint64_t page_flags = PAGE_USER;
 	if (flags & PROT_READ)

@@ -1,0 +1,8 @@
+name: Evil - mmap()
+description: Tries to mmap() memory at kernel addresses
+
+required: true
+
+regexlines:
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'

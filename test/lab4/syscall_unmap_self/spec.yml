@@ -1,0 +1,6 @@
+name: Syscall - Unmap .text
+description: Unmaps the .text part of the current binary, which should crash
+
+regexlines:
+  - '.PID     1. user fault va 0x800... ip 0x800...'
+  - '.PID     1. Freed task with PID 1'

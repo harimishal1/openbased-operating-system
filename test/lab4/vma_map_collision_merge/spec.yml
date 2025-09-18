@@ -1,0 +1,9 @@
+name: VMA - Map Collisions Should Merge
+description: Tests whether overlapping maps cause a merge of the VMAs
+
+regexlines:
+  - '0x0000000000804000 - 0x0000000001000000 .---. free'
+  - '0x0000000001000000 - 0x0000000001003000 .r-x. user'
+  - '0x0000000001003000 - 0x00007fffffffd000 .---. free'
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'

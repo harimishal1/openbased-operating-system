@@ -1,0 +1,9 @@
+name: User Fault - Map as Writeable witout Read
+description: Map a page as write-only, which should fail
+
+required: true
+
+regexlines:
+  - '0x0000000000804000 - 0x00007fffffffd000 .---. free'
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'

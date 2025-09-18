@@ -1,0 +1,8 @@
+name: VMA - Lazy Loading
+description: Tests that memory remains unmapped by default
+
+required: true
+
+regexlines:
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'

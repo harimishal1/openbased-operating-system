@@ -7,5 +7,10 @@ enum {
 	SYS_getpid,
 	SYS_kill,
 	SYS_exit,
+	SYS_mquery,
+	SYS_mmap,
+	SYS_munmap,
+	SYS_mprotect,
+	SYS_madvise,
 	NSYSCALLS,
 };

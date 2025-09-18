@@ -1,0 +1,8 @@
+name: Evil - mprotect()
+description: Tries to call mprotect on kernel memory
+
+required: true
+
+regexlines:
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'

@@ -1,0 +1,12 @@
+name: VMA - Repeated Splitting
+description: More thorough testing of VMA splitting behaviour
+
+regexlines:
+  - '0x0000000000804000 - 0x0000000001000000 .---. free'
+  - '0x0000000001000000 - 0x0000000001001000 .r-x. user'
+  - '0x0000000001001000 - 0x0000000001002000 .rw-. user'
+  - '0x0000000001002000 - 0x0000000001003000 .r-x. user'
+  - '0x0000000001003000 - 0x0000000001004000 .rw-. user'
+  - '0x0000000001004000 - 0x00007fffffffd000 .---. free'
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'
