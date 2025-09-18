@@ -59,6 +59,10 @@ TEST_PARALLEL = 1
 # each interrupt triggered, and `cpu_reset` will trigger a CPU
 # state dump before the VM is reset (typically due to a triple
 # fault). This will most likely be useful in labs 1, 2, 3 and 6.
+#
+# Note that these options are disabled during testing with make test.
+# To specify QEMU parameters during testing, use the "qemu" field
+# in a test specification.
 #QEMUEXTRA = -d int,cpu_reset
 
 # Using TEST, it is possible to hardcode the execution of a single

@@ -19,3 +19,17 @@ LAB=3
 # features will be tested separately, in isolation, to prevent
 # interference between bonus features.
 #BONUSES = FOO BAR FOOBAR
+
+# The following setup can be used to specify custom configuration
+# settings for specific bonus features. For example, for the SMEP/
+# SMAP bonus in lab 3, this setup can be used to selectively
+# enable the proper QEMU runtime flags.
+#
+# In this setup, the following variables can be modified:
+## QEMUOPTS - For additional QEMU parameters.
+## CFLAGS   - For additional compilation parameters
+# Make sure to use "+=" to not override any other settings.
+#
+# ifneq ($(filter FOO,$(BONUS)),)
+# QEMUOPTS += ...
+# endif

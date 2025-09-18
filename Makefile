@@ -109,8 +109,8 @@ $(OBJDIR)/.vars.%: FORCE
 ###############################
 
 # Optionally include any local configuration by the user
--include conf/lab.mk
 -include conf/env.mk
+-include conf/lab.mk
 
 # Clean up variables
 LAB := $(strip $(LAB))
@@ -260,8 +260,6 @@ GDBPORT ?= 1234
 
 # Construct the QEMU options
 
-QEMUOPTS :=
-
 # Dynamically register requested test, if present
 ifneq ($(TEST),)
 QEMUOPTS += -fw_cfg opt/openlsd.test,string=$(subst -,_,$(TEST))
@@ -385,7 +383,7 @@ run-test-%:
 
 TEST_PARALLEL ?= 1
 
-TEST_FLAGS ?= --clean                        # Always perform a clean and rebuild before testing
+TEST_FLAGS += --clean                        # Always perform a clean and rebuild before testing
 TEST_FLAGS += --parallel $(TEST_PARALLEL)    # Set the number of tests to run in parallel
 TEST_FLAGS += $(patsubst -j%,--build-cores %,$(filter -j%,$(MFLAGS)))
                                             # Run the rebuild in parallel just like the current make
