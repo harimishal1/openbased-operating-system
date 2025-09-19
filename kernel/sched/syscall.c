@@ -25,9 +25,9 @@ void syscall_init(void)
 	write_msr(MSR_LSTAR, (uint64_t)syscall64);
 	write_msr(MSR_SFMASK, IF_RFLAGS);
 	write_msr(MSR_EFER, read_msr(MSR_EFER) | MSR_EFER_SCE);
+	write_msr(MSR_KERNEL_GS_BASE, (uint64_t)&this_cpu);
 	#endif
 }
-
 
 /*
  * Print a string to the system console.

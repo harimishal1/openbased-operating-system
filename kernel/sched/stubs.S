@@ -105,6 +105,8 @@ syscall64:
 	movq %gs:CPU_TSS_RSP0, %rsp
 
 	/* Store the register state into the per-cpu struct. */
+	movq    %rcx, %gs:CPU_TSS_RSP1
+    movq    %r11, %gs:CPU_TSS_RSP2 
 
 #endif
 	/* Jump to the system call handler. This is implemented as a normal function
@@ -153,6 +155,10 @@ sysret64:
 	/* LAB 3: your bonus code here. */
 #ifdef BONUS_SYSCALL
 	/* Recover the register state. */
+	movq    %gs:CPU_TSS_RSP3, %rsp
+    movq    %gs:CPU_TSS_RSP1, %rcx 
+    movq    %gs:CPU_TSS_RSP2, %r11
+    swapgs
 #endif
 
 	/* Return from the system call. */
