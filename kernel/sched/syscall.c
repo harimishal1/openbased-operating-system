@@ -20,6 +20,12 @@ extern void syscall64(void);
 void syscall_init(void)
 {
 	/* LAB 3: your bonus code here. */
+#ifdef BONUS_SYSCALL
+	write_msr(MSR_STAR, ((uint64_t)GDT_KCODE << 32) | ((uint64_t)GDT_UCODE << 48));
+	write_msr(MSR_LSTAR, (uint64_t)syscall64);
+	write_msr(MSR_SFMASK, IF_RFLAGS);
+	write_msr(MSR_EFER, read_msr(MSR_EFER) | MSR_EFER_SCE);
+	#endif
 }
 
 

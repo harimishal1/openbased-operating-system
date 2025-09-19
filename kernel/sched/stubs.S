@@ -95,12 +95,18 @@ isr_common_stub:
 .global syscall64
 syscall64:
 	/* LAB 3: your bonus code here. */
+#ifdef BONUS_SYSCALL
+	swapgs
+
 	/* Store the userspace stack pointer in the per-cpu struct. */
+	movq %rsp, %gs:CPU_TSS_RSP3
 
 	/* Load the kernel stack pointer from the per-cpu struct. */
+	movq %gs:CPU_TSS_RSP0, %rsp
 
 	/* Store the register state into the per-cpu struct. */
 
+#endif
 	/* Jump to the system call handler. This is implemented as a normal function
 	 * that expects the syscall number as its seventh argument, so we push the
 	 * syscall number to the stack again. Also restore the RCX register and add
@@ -145,6 +151,9 @@ iret64:
 .global sysret64
 sysret64:
 	/* LAB 3: your bonus code here. */
+#ifdef BONUS_SYSCALL
 	/* Recover the register state. */
+#endif
+
 	/* Return from the system call. */
 	sysretq
