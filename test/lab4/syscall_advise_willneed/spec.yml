@@ -1,0 +1,9 @@
+name: Syscall - Advise Will Need
+description: Advise page as "will need" should map that page
+
+regexlines:
+  - '0x0000000000804000 - 0x0000000001000000 .---. free'
+  - '0x0000000001000000 - 0x0000000001001000 .rw-. user'
+  - '0x0000000001001000 - 0x00007fffffffd000 .---. free'
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'

@@ -1,0 +1,11 @@
+name: Syscall - Unaligned munmap()
+description: Call munmap with an address that is not page-aligned
+
+regexlines:
+  - '0x0000000000803000 - 0x0000000000804000 .rw-. .data'
+  - '0x0000000000804000 - 0x0000000001000000 .---. free'
+  - '0x0000000001000000 - 0x0000000001002000 .---. free'
+  - '0x0000000001002000 - 0x0000000001004000 .rw-. user'
+  - '0x0000000001004000 - 0x00007fffffffd000 .---. free'
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'

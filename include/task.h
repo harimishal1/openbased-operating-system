@@ -2,6 +2,8 @@
 #pragma once
 
 #include <types.h>
+#include <list.h>
+#include <rbtree.h>
 
 #include <x86-64/idt.h>
 #include <x86-64/memory.h>
@@ -56,4 +58,7 @@ struct task {
 	/* The virtual address space. */
 	struct page_table *task_pml4;
 
+	/* The VMAs */
+	struct rb_tree task_rb;
+	struct list task_mmap;
 };

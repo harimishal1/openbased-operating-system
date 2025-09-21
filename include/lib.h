@@ -14,6 +14,23 @@
 #include <x86-64/memory.h>
 
 
+enum {
+	VMA_FREE = 0,
+	VMA_ANONYMOUS,
+	VMA_EXECUTABLE,
+};
+
+enum {
+	VM_UNMAPPED = 0,
+	VM_4K_PAGE,
+	VM_2M_PAGE,
+};
+
+struct vma_info {
+	char vm_name[64];
+	void *vm_base, *vm_end;
+	int vm_prot, vm_type, vm_mapped;
+};
 
 #define USED(x) (void)(x)
 
@@ -34,6 +51,12 @@ int kill(pid_t);
 void exit(int);
 
 
+int mquery(struct vma_info *info, void *addr);
+void *mmap(void *addr, size_t len, int prot, int flags, int fd,
+	uintptr_t offset);
+void munmap(void *addr, size_t len);
+int mprotect(void *addr, size_t len, int prot);
+int madvise(void *addr, size_t len, int advise);
 
 /* File open modes */
 #define O_RDONLY    0x0000      /* open for reading only */
@@ -51,4 +74,15 @@ void exit(int);
 #define PROT_WRITE    (1 << 1)
 #define PROT_EXEC     (1 << 2)
 
+#define MAP_PRIVATE   (1 << 0)
+#define MAP_ANONYMOUS (1 << 1)
+#define MAP_POPULATE  (1 << 4)
+#define MAP_FIXED     (1 << 5)
+#define MAP_FAILED    (void *)(0xffffffffffffffffull)
+
+#define MADV_WILLNEED 1
+#define MADV_DONTNEED 2
+
+/* vma.c */
+void print_vmas(void);
 

@@ -233,7 +233,7 @@ void int_handler(struct int_frame *frame)
 	 * "cli" in the interrupt path.
 	 */
 	assert(!(read_rflags() & FLAGS_IF));
-	cprintf("Incoming INT frame at %p\n", frame);
+	/* cprintf("Incoming INT frame at %p\n", frame); */
 	if ((frame->cs & 3) == 3) {
 		/* Interrupt from user mode. */
 		assert(cur_task);
@@ -263,7 +263,10 @@ void page_fault_handler(struct int_frame *frame)
 
 	/* Read the CR2 register to find the faulting address. */
 	fault_va = (void *)read_cr2();
-	
+
+	/* LAB 4: your code here */
+
+
 	/* Handle kernel-mode page faults. */
 	/* LAB 3: your code here. */
 	if (frame->cs == GDT_KCODE) {

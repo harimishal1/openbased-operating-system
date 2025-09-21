@@ -1,0 +1,6 @@
+name: Syscall - mprotect() with No Permissions
+description: Writes to a page, then revokes all permissions. Data must be kept
+
+regexlines:
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'

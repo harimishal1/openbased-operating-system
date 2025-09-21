@@ -1,0 +1,7 @@
+name: User Fault - Map NULL, but Fixed
+description: Tries to map the NULL address, but fixed
+
+regexlines:
+  - '0x0000000000000000 - 0x0000000000200000 .---. free'
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'

@@ -1,0 +1,9 @@
+name: VMA - Complex Merging Scenario
+description: More complicated maps that should end up merging
+
+regexlines:
+  - '0x0000000000804000 - 0x0000000001000000 .---. free'
+  - '0x0000000001000000 - 0x000000000100e000 .r--. user'
+  - '0x000000000100e000 - 0x00007fffffffd000 .---. free'
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'

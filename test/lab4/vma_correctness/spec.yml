@@ -1,0 +1,13 @@
+name: VMA - Correctness
+description: Basic VMA correctness check
+
+required: true
+
+regexlines:
+  - '0x0000000000200000 - 0x0000000000201000 .rw-. .data'
+  - '0x0000000000800000 - 0x0000000000802000 .r-x. .text'
+  - '0x0000000000802000 - 0x0000000000803000 .r--. .rodata'
+  - '0x0000000000803000 - 0x0000000000804000 .rw-. .data'
+  - '0x00007fffffffd000 - 0x00007fffffffe000 .rw-. stack'
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'

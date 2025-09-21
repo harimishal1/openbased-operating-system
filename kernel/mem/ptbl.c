@@ -172,7 +172,7 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
  * page table is present. Otherwise this function checks every entry in the
  * page table and frees the page table if no entry is set.
  *
- * Hint: this function calls pa2page(), page2kva() and page_free().
+ * Hint: this function calls pa2page(), page2kva() and page_decref().
  */
 int ptbl_free(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)

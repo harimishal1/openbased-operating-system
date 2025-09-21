@@ -1,0 +1,11 @@
+name: Evil - madvise()
+description: Trying to advise on kernel pages
+
+required: true
+
+matchlines:
+  - This should not have crashed!
+
+regexlines:
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'

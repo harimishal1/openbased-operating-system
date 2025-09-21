@@ -11,7 +11,7 @@
 
 # This is the current lab number. It will be updated in the
 # template for every next lab, so don't change it yourself.
-LAB=3
+LAB=4
 
 # This variable can be used to specify the set of bonus features
 # you have implemented in your kernel. This is used when running
@@ -19,3 +19,17 @@ LAB=3
 # features will be tested separately, in isolation, to prevent
 # interference between bonus features.
 # BONUSES = DOUBLE_FREE_DETECTION INVALID_FREE_DETECTION
+
+# The following setup can be used to specify custom configuration
+# settings for specific bonus features. For example, for the SMEP/
+# SMAP bonus in lab 3, this setup can be used to selectively
+# enable the proper QEMU runtime flags.
+#
+# In this setup, the following variables can be modified:
+## QEMUOPTS - For additional QEMU parameters.
+## CFLAGS   - For additional compilation parameters
+# Make sure to use "+=" to not override any other settings.
+#
+# ifneq ($(filter FOO,$(BONUS)),)
+# QEMUOPTS += ...
+# endif

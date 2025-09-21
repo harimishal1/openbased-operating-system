@@ -1,0 +1,9 @@
+name: Syscall - Protect as Executable
+description: Allocates and writes to a page, then marks as executable and executes it
+
+regexlines:
+  - '0x0000000001000000 - 0x0000000001001000 .rw-. user'
+  - '0x0000000001000000 - 0x0000000001001000 .r-x. user'
+  - 'Successfully executed code'
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'

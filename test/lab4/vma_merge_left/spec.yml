@@ -1,0 +1,9 @@
+name: VMA - Merge to the Left
+description: Map an additional page to the left of an existing map
+
+regexlines:
+  - '0x0000000000804000 - 0x0000000001000000 .---. free'
+  - '0x0000000001000000 - 0x0000000001002000 .r--. user'
+  - '0x0000000001002000 - 0x00007fffffffd000 .---. free'
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'

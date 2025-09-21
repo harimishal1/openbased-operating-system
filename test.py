@@ -486,7 +486,7 @@ class Test(DataClassYAMLMixin):
     regexlines: list[str] = field(default_factory=list[str])
     noregexlines: list[str] = field(default_factory=list[str])
 
-    async def __run(self, log: Log, do_build: bool) -> TestReport:
+    async def __run(self, log: Log, do_build: bool, bonus: str) -> TestReport:
         """Run the current test through make"""
 
         (exitcode, stdout, stderr) = await run_command(
@@ -494,7 +494,8 @@ class Test(DataClassYAMLMixin):
                 "run" if do_build else "exec",
                 f"TEST={self.test_lab}_{self.test_name}",
                 "-j1",
-                f"QEMUEXTRA={self.qemu}"
+                f"QEMUEXTRA={self.qemu}",
+                f"BONUS={bonus}"
             ),
             timeout=self.timeout,
             log=log
@@ -558,10 +559,10 @@ class Test(DataClassYAMLMixin):
 
         return report
 
-    async def test(self, log: Log, do_build: bool = True) -> TestReport:
+    async def test(self, log: Log, do_build: bool = True, bonus: str = "") -> TestReport:
         """Run the current test and check the output"""
         
-        report = await self.__run(log, do_build)
+        report = await self.__run(log, do_build, bonus)
         report = self.__assert_lines(report)
 
         return report
@@ -673,7 +674,7 @@ async def build_kernel(runner: ActionRunner, cores: int = 0, lab: int | None = N
 
     return True
 
-async def run_tests(tests: list[Test], parallel: int, runner: ActionRunner) -> list[TestReport]:
+async def run_tests(tests: list[Test], parallel: int, bonus: str, runner: ActionRunner) -> list[TestReport]:
     """Run all tests in the list and report on the progress and output. This assumes the build to have been completed"""
 
     sem = asyncio.Semaphore(parallel)
@@ -682,7 +683,7 @@ async def run_tests(tests: list[Test], parallel: int, runner: ActionRunner) -> l
         async with sem:
             action = runner.run(f"Test '{test.friendly_name}'", int(runner.console.size.height * 0.8 / parallel))
             action.start()
-            report = await test.test(action.log, do_build=False)
+            report = await test.test(action.log, do_build=False, bonus=bonus)
 
         action.done(f"{report.status_symbol()} Test '{test.friendly_name}' - {report.status_message()}")
 
@@ -787,7 +788,7 @@ def cli(
 
     if not specs:
         console.print(f"No tests matched the selection critera!")
-        exit(0)
+        exit(1)
 
     # Start execution for each bonus
     success = True
@@ -795,7 +796,7 @@ def cli(
         with live:
             if bonus == "NONE":
                 console.print(f"No bonus to test...")
-                continue
+                exit(1)
 
             if bonus != "":
                 console.print(f"Testing bonus feature {bonus}...")
@@ -818,7 +819,7 @@ def cli(
                 if result == False: exit(1)
             
             # Run test specs
-            reports = asyncio.run(run_tests(bonus_specs, parallel, runner))
+            reports = asyncio.run(run_tests(bonus_specs, parallel, bonus, runner))
 
         # Report on results
         # Single & EONLY & FAIL -> Error
