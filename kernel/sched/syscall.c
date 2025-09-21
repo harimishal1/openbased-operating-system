@@ -125,7 +125,7 @@ int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 		default: 
 			break;
 	}
-	return ENOSYS;
+	return -ENOSYS;
 }
 
 void syscall_handler(uint64_t a1, uint64_t a2, uint64_t a3,
