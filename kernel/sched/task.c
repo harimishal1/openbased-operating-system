@@ -276,7 +276,7 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 		}
 		load_pml4((struct page_table*)PADDR(kernel_pml4));
 		protect_region(task->task_pml4, (void *)va, memsz, flags); */
-		protect_vma_range(task, (void*) va, memsz, flags);
+		protect_vma_range(task, (void*) va, memsz, prot_flags);
 
 	}
 
