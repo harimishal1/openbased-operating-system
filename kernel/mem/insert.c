@@ -41,7 +41,7 @@ static int insert_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	
 	page = info->page;
 	page->pp_free = 0;
-	*entry = page2pa(page) | (info->flags);
+	*entry = page2pa(page) | (info->flags | PAGE_PRESENT);
 	return 0;
 }
 

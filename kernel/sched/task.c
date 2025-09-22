@@ -249,17 +249,24 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 
 		//uint64_t flags = program_header[i].p_flags;
 		uint64_t flags = (PAGE_PRESENT | PAGE_USER);
+		uint64_t prot_flags = (PROT_READ | MAP_POPULATE);
 
 		if (program_header[i].p_flags & ELF_PROG_FLAG_WRITE){ 
 			flags |= (PAGE_WRITE | PAGE_NO_EXEC);
+			prot_flags |= PROT_WRITE;
 		}
 
 		if (!(program_header[i].p_flags & ELF_PROG_FLAG_EXEC)){ 
 			flags |= PAGE_NO_EXEC;
 		}
 
+		if ((program_header[i].p_flags & ELF_PROG_FLAG_EXEC)){ 
+			prot_flags |= PROT_EXEC;
+		}
+
+
 		//populate_region(task->task_pml4, (void *)va, memsz, flags);
-		add_executable_vma(task, "data", (void*)va, memsz, flags, binary + program_header[i].p_offset, filesz);
+		add_executable_vma(task, "data", (void*)va, memsz, prot_flags, binary + program_header[i].p_offset, filesz);
 		/* load_pml4((struct page_table*)PADDR(task->task_pml4));
 		memcpy((void *)va, binary + program_header[i].p_offset, filesz);
 		if(memsz > filesz){
@@ -279,8 +286,9 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 
 	/* LAB 3: your code here. */
 	//populate_region(task->task_pml4, (void *)(USTACK_TOP - PAGE_SIZE), PAGE_SIZE, PAGE_PRESENT | PAGE_USER | PAGE_WRITE | PAGE_NO_EXEC);
-	uint64_t flags = PAGE_PRESENT | PAGE_USER | PAGE_WRITE | PAGE_NO_EXEC;
-	add_anonymous_vma(task,"user", (void *)(USTACK_TOP - PAGE_SIZE) , PAGE_SIZE, flags);
+	//uint64_t flags = PAGE_PRESENT | PAGE_USER | PAGE_WRITE | PAGE_NO_EXEC;
+	int prot_flags = PROT_READ | PROT_WRITE | MAP_ANONYMOUS;
+	add_anonymous_vma(task,"user", (void *)(USTACK_TOP - PAGE_SIZE), PAGE_SIZE, prot_flags);
 } 
 
 /* Allocates a new task with task_alloc(), loads the named ELF binary using

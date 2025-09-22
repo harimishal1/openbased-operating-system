@@ -79,8 +79,8 @@ struct vma *add_executable_vma(struct task *task, char *name, void *addr,
 	size_t size, int flags, void *src, size_t len)
 {
 	/* LAB 4: your code here. */
-	add_vma(task, name, addr, size, flags);
-	return NULL;
+	struct vma *vma = add_vma(task, name, addr, size, flags);
+	return vma;
 }
 
 /* A simplified wrapper to add anonymous VMAs, i.e. VMAs not backed by an
