@@ -1,3 +1,10 @@
+#include "kernel/vma/insert.h"
+#include "kernel/mem/kmem.h"
+#include "kernel/vma/merge.h"
+#include "list.h"
+#include "rbtree.h"
+#include "x86-64/memory.h"
+#include "x86-64/paging.h"
 #include <types.h>
 
 #include <kernel/mem.h>
@@ -72,6 +79,7 @@ struct vma *add_executable_vma(struct task *task, char *name, void *addr,
 	size_t size, int flags, void *src, size_t len)
 {
 	/* LAB 4: your code here. */
+	add_vma(task, name, addr, size, flags);
 	return NULL;
 }
 
@@ -97,5 +105,95 @@ struct vma *add_vma(struct task *task, char *name, void *addr, size_t size,
 	int flags)
 {
 	/* LAB 4: your code here. */
+/* 	struct vma *vma = kmalloc(sizeof(*vma));
+	if(!vma){
+		return NULL;
+	}
+
+	vma->vm_flags = flags;
+	vma->vm_name  = name; 
+	size = (size + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+
+	list_init(&vma->vm_mmap);
+
+	if(addr){
+		uintptr_t base = ((uintptr_t)addr) & ~(PAGE_SIZE - 1);
+		uintptr_t end  = base + size;
+		vma->vm_base = (void*)base;
+		vma->vm_end = (void*)end;
+		vma->vm_rb.child[0] = vma->vm_rb.child[1] = NULL;  
+
+		if (insert_vma(task, vma) == 0) 
+			return vma;
+
+        //uint64_t top = (uint64_t)addr;
+		uint64_t top = ((uint64_t)addr) & ~(PAGE_SIZE - 1);
+        struct list *node;
+        list_foreach_rev(&task->task_mmap, node) {
+            struct vma *curr = container_of(node, struct vma, vm_mmap);
+			if ((uint64_t)curr->vm_end > top)
+        		continue;
+
+            if (top - (uint64_t)curr->vm_end >= size) {
+                vma->vm_base = (void*)(top - size);
+                vma->vm_end  = (void*)top;
+                if (insert_vma(task, vma) == 0) 
+					return vma;
+            }
+            top = (uint64_t)curr->vm_base;
+        }
+		if (top >= size) {
+			vma->vm_base = (void*)(top - size);
+			vma->vm_end  = (void*)top;
+			if (insert_vma(task, vma) == 0) 
+				return vma;
+		}
+
+		top = USER_LIM & ~(PAGE_SIZE - 1);
+		list_foreach_rev(&task->task_mmap, node) {
+			struct vma *curr = container_of(node, struct vma, vm_mmap);
+			if ((uint64_t)curr->vm_end > top)
+				continue;
+
+			if (top <= (uint64_t)addr)
+				break;
+
+			if (top - (uint64_t)curr->vm_end >= size) {
+				uint64_t base = top - size;
+				if (base >= (uint64_t)addr) { 
+					vma->vm_base = (void*)base;
+					vma->vm_end  = (void*)top;
+					if (insert_vma(task, vma) == 0) 
+						return vma;
+				}
+			}
+			top = (uint64_t)curr->vm_base;
+		}
+	} else {
+		//uint64_t current_addr = USER_LIM; 
+		uint64_t current_addr = USER_LIM & ~(PAGE_SIZE - 1);
+		struct list *node;
+
+		list_foreach_rev(&task->task_mmap, node) {
+			struct vma *curr = container_of(node, struct vma, vm_mmap);
+			if ((uint64_t)curr->vm_end <= current_addr && 
+				current_addr - (uint64_t)curr->vm_end >= size) {
+				vma->vm_base = (void*)current_addr - size;
+				vma->vm_end = (void*) current_addr;
+				if (insert_vma(task, vma) == 0) 
+					return vma;
+			}
+			current_addr = (uint64_t)curr->vm_base;
+		}
+		if (current_addr - PAGE_SIZE >= size) { 
+            vma->vm_base = (void*)current_addr - size;
+            vma->vm_end = (void*)current_addr;
+			if (insert_vma(task, vma) == 0) 
+				return vma;
+        } else {
+			kfree(vma);
+			return NULL;
+		}
+	} */
 	return NULL;
 }
