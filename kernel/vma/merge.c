@@ -13,7 +13,28 @@
 struct vma *merge_vma(struct task *task, struct vma *lhs, struct vma *rhs)
 {
 	/* LAB 4: your code here. */
-	return NULL;
+
+	if (lhs->vm_end != rhs->vm_base && rhs->vm_end != lhs->vm_base)
+        return NULL;
+    if (lhs->vm_flags != rhs->vm_flags) 
+		return NULL;
+    if (strcmp(lhs->vm_name, rhs->vm_name) != 0)
+    	return NULL;
+    if (lhs->vm_src != rhs->vm_src)   
+		return NULL;
+    if (lhs->vm_len != rhs->vm_len)   
+		return NULL;
+
+    if (lhs->vm_end == rhs->vm_base) {
+        lhs->vm_end = rhs->vm_end;
+    } else if (rhs->vm_end == lhs->vm_base) {
+        lhs->vm_base = rhs->vm_base;
+    }
+
+    remove_vma(task, rhs);
+    kfree(rhs);
+
+    return lhs;
 }
 
 /* Given a task and a VMA, this function attempts to merge the given VMA with
