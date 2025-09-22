@@ -4,6 +4,9 @@
 #include "kernel/mem/buddy.h"
 #include "kernel/mem/init.h"
 #include "kernel/mem/protect.h"
+#include "kernel/vma/insert.h"
+#include "kernel/vma/protect.h"
+#include "kernel/vma/remove.h"
 #include "stdio.h"
 #include "x86-64/memory.h"
 #include "x86-64/paging.h"
@@ -255,14 +258,16 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 			flags |= PAGE_NO_EXEC;
 		}
 
-		populate_region(task->task_pml4, (void *)va, memsz, flags);
-		load_pml4((struct page_table*)PADDR(task->task_pml4));
+		//populate_region(task->task_pml4, (void *)va, memsz, flags);
+		add_executable_vma(task, "data", (void*)va, memsz, flags, binary + program_header[i].p_offset, filesz);
+		/* load_pml4((struct page_table*)PADDR(task->task_pml4));
 		memcpy((void *)va, binary + program_header[i].p_offset, filesz);
 		if(memsz > filesz){
 			memset((void *)(va + filesz), 0, memsz - filesz);
 		}
 		load_pml4((struct page_table*)PADDR(kernel_pml4));
-		protect_region(task->task_pml4, (void *)va, memsz, flags);
+		protect_region(task->task_pml4, (void *)va, memsz, flags); */
+		protect_vma_range(task, (void*) va, memsz, flags);
 
 	}
 
@@ -273,9 +278,10 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 	 */
 
 	/* LAB 3: your code here. */
-	populate_region(task->task_pml4, (void *)(USTACK_TOP - PAGE_SIZE), PAGE_SIZE, 
-	PAGE_PRESENT | PAGE_USER | PAGE_WRITE | PAGE_NO_EXEC);
-}
+	//populate_region(task->task_pml4, (void *)(USTACK_TOP - PAGE_SIZE), PAGE_SIZE, PAGE_PRESENT | PAGE_USER | PAGE_WRITE | PAGE_NO_EXEC);
+	uint64_t flags = PAGE_PRESENT | PAGE_USER | PAGE_WRITE | PAGE_NO_EXEC;
+	add_anonymous_vma(task,"user", (void *)(USTACK_TOP - PAGE_SIZE) , PAGE_SIZE, flags);
+} 
 
 /* Allocates a new task with task_alloc(), loads the named ELF binary using
  * task_load_elf() and sets its task type.
@@ -318,6 +324,9 @@ void task_free(struct task *task)
 
 	/* Unmap the task from the PID map. */
 	tasks[task->task_pid] = NULL;
+
+	/* Free the VMA */
+	free_vmas(task);
 
 	/* Unmap the user pages. */
 	unmap_user_pages(task->task_pml4);
