@@ -1,4 +1,5 @@
 
+#include "kernel/vma/pfault.h"
 #include <assert.h>
 #include <stdio.h>
 
@@ -12,6 +13,8 @@
 
 #include <kernel/sched/task.h>
 
+#include <lib.h>
+extern int task_page_fault_handler(struct task *task, void *va, int flags);
 
 /* LAB 3: your code here. */
 extern void isr0(void);
@@ -265,7 +268,15 @@ void page_fault_handler(struct int_frame *frame)
 	fault_va = (void *)read_cr2();
 
 	/* LAB 4: your code here */
-
+	perm = PROT_READ;
+	if (frame->err_code & 0x2)
+	    perm |= PROT_WRITE;
+	if (frame->err_code & 0x10)
+	    perm |= PROT_EXEC;
+	ret = task_page_fault_handler(cur_task, fault_va, perm);
+	if (ret == 0) {
+		return;
+	}
 
 	/* Handle kernel-mode page faults. */
 	/* LAB 3: your code here. */
