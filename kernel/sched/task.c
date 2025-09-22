@@ -7,6 +7,7 @@
 #include "kernel/vma/insert.h"
 #include "kernel/vma/protect.h"
 #include "kernel/vma/remove.h"
+#include "kernel/vma/user.h"
 #include "stdio.h"
 #include "x86-64/memory.h"
 #include "x86-64/paging.h"
@@ -22,6 +23,7 @@
 #include <kernel/mem.h>
 #include <kernel/sched.h>
 
+extern int check_user_vma_range(uintptr_t *fault_va, struct task *task, void *base, size_t size, int flags);
 
 pid_t pid_max = 1 << 16;
 struct task **tasks = (struct task **)PIDMAP_BASE;
@@ -436,18 +438,23 @@ void assert_user_mem(struct task *task, void *va, size_t size, int flags)
 	uintptr_t fault_va;
 
 	/* LAB 4: your code here */
-
-	uint64_t page_flags = PAGE_USER;
-	if (flags & PROT_READ)
-		page_flags |= PAGE_PRESENT;
-	if (flags & PROT_WRITE)
-		page_flags |= PAGE_WRITE;
-	if (!(flags & PROT_EXEC))
-		page_flags |= PAGE_NO_EXEC;
-
-	if (check_user_mem(&fault_va, task->task_pml4, va, size, page_flags) < 0) {
+	if (check_user_vma_range(&fault_va, task, va, size, flags) < 0) {
 		cprintf("[PID %5u] Access violation for va %p\n",
 			task->task_pid, fault_va);
 		task_destroy(task);
 	}
+
+	// uint64_t page_flags = PAGE_USER;
+	// if (flags & PROT_READ)
+	// 	page_flags |= PAGE_PRESENT;
+	// if (flags & PROT_WRITE)
+	// 	page_flags |= PAGE_WRITE;
+	// if (!(flags & PROT_EXEC))
+	// 	page_flags |= PAGE_NO_EXEC;
+
+	// if (check_user_mem(&fault_va, task->task_pml4, va, size, page_flags) < 0) {
+	// 	cprintf("[PID %5u] Access violation for va %p\n",
+	// 		task->task_pid, fault_va);
+	// 	task_destroy(task);
+	// }
 }
