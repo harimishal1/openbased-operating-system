@@ -1,4 +1,5 @@
 
+#include "error.h"
 #include "kernel/sched/task.h"
 #include "stdio.h"
 #include <types.h>
@@ -106,13 +107,12 @@ void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd,
     }
 
     if (flags & MAP_FIXED) {
-        remove_vma_range(task, addr, len);
+        remove_vma_range(task, aligned_addr, len);
     }
 
-    if (flags & MAP_FIXED && !addr) {
+    if ((flags & MAP_FIXED) && (addr == NULL)) {
 		return MAP_FAILED;
 	}
-
 
 	if (!(flags & MAP_ANONYMOUS) || !(flags & MAP_PRIVATE)) {
         return MAP_FAILED;
@@ -126,7 +126,7 @@ void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd,
         return MAP_FAILED;
     }
 
-	if ((prot & PROT_EXEC) && !(prot & PROT_EXEC)) {
+	if ((prot & PROT_EXEC) && !(prot & PROT_READ)) {
         return MAP_FAILED;
     }
 
@@ -151,6 +151,13 @@ void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd,
 void sys_munmap(void *addr, size_t len)
 {
 	/* LAB 4: your code here. */
+	struct task *task = cur_task;
+	void* aligned_addr = ROUNDDOWN(addr, PAGE_SIZE);
+	void* aligned_end = ROUNDUP(addr + len, PAGE_SIZE);
+	size_t aligned_size = aligned_end - aligned_addr;
+	cprintf("addr: %lx, aligned_addr: %lx", addr, aligned_addr);
+	cprintf("size: %x, aligned_size: %x", len, aligned_size);
+	int r = remove_vma_range(task, aligned_addr, aligned_size);
 }
 
 int sys_mprotect(void *addr, size_t len, int prot)
@@ -162,5 +169,23 @@ int sys_mprotect(void *addr, size_t len, int prot)
 int sys_madvise(void *addr, size_t len, int advise)
 {
 	/* LAB 4: your code here. */
-	return -ENOSYS;
+    struct task *task = cur_task;
+
+    if (!len) 
+		return -EINVAL;
+
+    uintptr_t base = ROUNDDOWN((uintptr_t)addr, PAGE_SIZE);
+    len = ROUNDUP(len, PAGE_SIZE);
+
+    if (base + len >= USER_LIM)
+        return -EINVAL;
+
+    switch (advise) {
+		case MADV_WILLNEED:
+			return populate_vma_range(task, (void*)base, len, PROT_READ | PROT_WRITE);
+		case MADV_DONTNEED:
+			return unmap_vma_range(task, (void*)base, len);
+		default:
+			return -ENOSYS;
+    }
 }

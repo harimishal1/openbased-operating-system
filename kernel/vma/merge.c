@@ -20,14 +20,19 @@ struct vma *merge_vma(struct task *task, struct vma *lhs, struct vma *rhs)
 	!page_aligned((uintptr_t)rhs->vm_base) ||
 	!page_aligned((uintptr_t)rhs->vm_end))
 		return NULL;
+    
 	if (lhs->vm_end != rhs->vm_base )
         return NULL;
+
     if (lhs->vm_flags != rhs->vm_flags) 
 		return NULL;
+	
     if (strcmp(lhs->vm_name, rhs->vm_name) != 0)
     	return NULL;
+
     if (lhs->vm_src != rhs->vm_src)   
 		return NULL;
+	
     if (lhs->vm_len != rhs->vm_len)   
 		return NULL;
 
