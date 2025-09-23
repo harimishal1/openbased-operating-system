@@ -1,5 +1,8 @@
 
+#include "kernel/vma/split.h"
+#include "x86-64/paging.h"
 #include <types.h>
+#include <lib.h>
 
 #include <kernel/mem.h>
 #include <kernel/vma.h>
@@ -14,6 +17,21 @@ int do_protect_vma(struct task *task, void *base, size_t size, struct vma *vma,
 	void *udata)
 {
 	/* LAB 4 (bonus): your code here. */
+	int *flags = udata;
+	if (*flags == vma->vm_flags) {
+		return 0;
+	}
+
+	struct vma *split_vma = split_vmas(task, vma, base, size);
+	split_vma->vm_flags = *flags;
+
+	uint64_t page_flags = PAGE_PRESENT | PAGE_USER;
+	if (*flags & PROT_WRITE) page_flags |= PAGE_WRITE;
+	if (!(*flags & PROT_EXEC)) page_flags |= PAGE_NO_EXEC;
+	protect_region(task->task_pml4, base, size, page_flags);
+
+	merge_vmas(task, split_vma);
+
 	return 0;
 }
 
