@@ -28,6 +28,7 @@ int do_protect_vma(struct task *task, void *base, size_t size, struct vma *vma,
 	uint64_t page_flags = PAGE_PRESENT | PAGE_USER;
 	if (*flags & PROT_WRITE) page_flags |= PAGE_WRITE;
 	if (!(*flags & PROT_EXEC)) page_flags |= PAGE_NO_EXEC;
+	if (*flags & PROT_NONE) page_flags = 0;
 	protect_region(task->task_pml4, base, size, page_flags);
 
 	merge_vmas(task, split_vma);

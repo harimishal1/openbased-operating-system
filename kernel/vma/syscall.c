@@ -153,14 +153,30 @@ void sys_munmap(void *addr, size_t len)
 int sys_mprotect(void *addr, size_t len, int prot)
 {
 	/* LAB 4: your code here. */
+    if (!len) return -EINVAL;
+    if ((prot & ~(PROT_READ | PROT_WRITE | PROT_EXEC | PROT_NONE))) {
+        return -EINVAL;
+    }
+	if ((prot & PROT_WRITE) && !(prot & PROT_READ)) {
+		return -EPERM;
+	}
+	if ((prot & PROT_EXEC) && !(prot & PROT_READ)) {
+		return -EPERM;
+	}
+	if ((prot & PROT_WRITE) && (prot & PROT_EXEC)) {
+		return -EPERM;
+	}
+	
+
 	struct task *task = cur_task;
 	void* aligned_addr = ROUNDDOWN(addr, PAGE_SIZE);
 	void* aligned_end = ROUNDUP(addr + len, PAGE_SIZE);
 	size_t aligned_size = aligned_end - aligned_addr;
 
-	protect_vma_range(task, aligned_addr, aligned_size, prot);
+	if (protect_vma_range(task, aligned_addr, aligned_size, prot) < 0) {
+		return -ENOSYS;
+	}
 	return 0;
-	// return -ENOSYS;
 }
 
 int sys_madvise(void *addr, size_t len, int advise)
