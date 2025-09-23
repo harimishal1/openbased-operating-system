@@ -1,4 +1,5 @@
 
+#include "kernel/sched/task.h"
 #include <types.h>
 
 #include <kernel/mem.h>
@@ -92,7 +93,41 @@ void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd,
 	uintptr_t offset)
 {
 	/* LAB 4: your code here. */
-	return NULL;
+	struct task *task = cur_task;
+
+    len = ROUNDUP(len, PAGE_SIZE);
+
+    if ((uintptr_t)addr + len >= USER_LIM) {
+        return MAP_FAILED;
+    }
+
+    if (flags & MAP_FIXED) {
+        remove_vma_range(task, addr, len);
+    }
+
+	if (!(flags & MAP_ANONYMOUS) || !(flags & MAP_PRIVATE)) {
+        return MAP_FAILED;
+    }
+
+	if ((prot & PROT_WRITE) && (prot & PROT_EXEC)) {
+        return MAP_FAILED;
+    }
+
+    struct vma *vma = add_anonymous_vma(task, "user", addr, len, prot);
+    
+	if (!vma) {
+        return MAP_FAILED;
+    }
+
+    if (flags & MAP_POPULATE) {
+        if (populate_vma_range(task, vma->vm_base, len, prot) < 0) {
+            remove_vma(task, vma);
+            kfree(vma);
+            return MAP_FAILED;
+        }
+    }
+
+    return vma->vm_base;
 }
 
 void sys_munmap(void *addr, size_t len)

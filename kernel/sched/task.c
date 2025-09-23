@@ -252,31 +252,35 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 		//uint64_t flags = program_header[i].p_flags;
 		uint64_t flags = (PAGE_PRESENT | PAGE_USER);
 		uint64_t prot_flags = (PROT_READ | MAP_POPULATE);
+		char* task_name = ".rodata";
 
 		if (program_header[i].p_flags & ELF_PROG_FLAG_WRITE){ 
 			flags |= (PAGE_WRITE | PAGE_NO_EXEC);
 			prot_flags |= PROT_WRITE;
+			task_name = ".data";
 		}
 
 		if (!(program_header[i].p_flags & ELF_PROG_FLAG_EXEC)){ 
 			flags |= PAGE_NO_EXEC;
+
 		}
 
 		if ((program_header[i].p_flags & ELF_PROG_FLAG_EXEC)){ 
 			prot_flags |= PROT_EXEC;
+			task_name = ".text";
 		}
 
-
-		//populate_region(task->task_pml4, (void *)va, memsz, flags);
-		add_executable_vma(task, "data", (void*)va, memsz, prot_flags, binary + program_header[i].p_offset, filesz);
-		/* load_pml4((struct page_table*)PADDR(task->task_pml4));
+		/* populate_region(task->task_pml4, (void *)va, memsz, flags);
+		load_pml4((struct page_table*)PADDR(task->task_pml4));
 		memcpy((void *)va, binary + program_header[i].p_offset, filesz);
 		if(memsz > filesz){
 			memset((void *)(va + filesz), 0, memsz - filesz);
 		}
 		load_pml4((struct page_table*)PADDR(kernel_pml4));
 		protect_region(task->task_pml4, (void *)va, memsz, flags); */
-		protect_vma_range(task, (void*) va, memsz, prot_flags);
+		size_t aligned_addr_diff = program_header[i].p_va - ROUNDDOWN(program_header[i].p_va, PAGE_SIZE);
+		add_executable_vma(task, task_name, (void*)va - aligned_addr_diff, ROUNDUP(va + memsz, PAGE_SIZE) - (va - aligned_addr_diff),
+			prot_flags, binary + program_header[i].p_offset - aligned_addr_diff, filesz + aligned_addr_diff);
 
 	}
 
@@ -287,10 +291,10 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 	 */
 
 	/* LAB 3: your code here. */
-	//populate_region(task->task_pml4, (void *)(USTACK_TOP - PAGE_SIZE), PAGE_SIZE, PAGE_PRESENT | PAGE_USER | PAGE_WRITE | PAGE_NO_EXEC);
-	//uint64_t flags = PAGE_PRESENT | PAGE_USER | PAGE_WRITE | PAGE_NO_EXEC;
+	/* populate_region(task->task_pml4, (void *)(USTACK_TOP - PAGE_SIZE), PAGE_SIZE, PAGE_PRESENT | PAGE_USER | PAGE_WRITE | PAGE_NO_EXEC);
+	uint64_t flags = PAGE_PRESENT | PAGE_USER | PAGE_WRITE | PAGE_NO_EXEC; */
 	int prot_flags = PROT_READ | PROT_WRITE | MAP_ANONYMOUS;
-	add_anonymous_vma(task,"user", (void *)(USTACK_TOP - PAGE_SIZE), PAGE_SIZE, prot_flags);
+	add_anonymous_vma(task,"stack", (void *)(USTACK_TOP - PAGE_SIZE), PAGE_SIZE, prot_flags);
 } 
 
 /* Allocates a new task with task_alloc(), loads the named ELF binary using
@@ -307,7 +311,8 @@ void task_create(uint8_t *binary, enum task_type type)
 	if (!task) {
 		panic("couldnt allocate task");
 	}
-
+	rb_init(&task->task_rb);
+	list_init(&task->task_mmap);
 	task_load_elf (task, binary);
 	task->task_type = type;
 
@@ -415,7 +420,6 @@ void task_run(struct task *task)
 		if (cur_task && cur_task->task_status == TASK_RUNNING) {
 			cur_task->task_status = TASK_RUNNABLE;
 		}
-
 		cur_task = task;
 		cur_task->task_status = TASK_RUNNING;
 		cur_task->task_runs++;

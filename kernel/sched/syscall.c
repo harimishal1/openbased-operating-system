@@ -1,4 +1,5 @@
 
+#include "syscall.h"
 #include "kernel/sched/task.h"
 #include "task.h"
 #include "types.h"
@@ -14,6 +15,7 @@
 #include <kernel/console.h>
 #include <kernel/mem.h>
 #include <kernel/sched.h>
+#include <kernel/vma/syscall.h>
 
 extern void syscall64(void);
 
@@ -122,6 +124,8 @@ int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 			return (int64_t)sys_kill( (pid_t)a1); 
 		case SYS_exit: 
 			return (int64_t)sys_exit((int)a1);
+		case SYS_mmap:
+			return (int64_t)sys_mmap((void*)a1, (size_t)a2, (int)a3, (int)a4, (int)a5, (uintptr_t)a6);
 		default: 
 			break;
 	}

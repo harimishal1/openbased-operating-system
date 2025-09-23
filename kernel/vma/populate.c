@@ -38,7 +38,7 @@ int do_populate_vma(struct task *task, void *base, size_t size,
 		populate_flags |= PAGE_NO_EXEC;
 	}
 
-	populate_region(task->task_pml4, base, size, populate_flags);
+	populate_region(task->task_pml4, base, size, populate_flags | PAGE_WRITE);
 
 	if (vma->vm_src) {
 		size_t vma_offset = (uintptr_t)base - (uintptr_t)vma->vm_base;
@@ -47,8 +47,7 @@ int do_populate_vma(struct task *task, void *base, size_t size,
 			memcpy(base, vma->vm_src + vma_offset, MIN(size, vma->vm_len - vma_offset));
 		}
 	}
-
-	// protect_region(task->task_pml4, base, size, populate_flags);
+	protect_region(task->task_pml4, base, size, populate_flags);
 
 	return 0;
 }

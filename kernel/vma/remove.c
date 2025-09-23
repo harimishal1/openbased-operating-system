@@ -40,7 +40,8 @@ int do_remove_vma(struct task *task, void *base, size_t size, struct vma *vma,
 {
 	/* LAB 4: your code here. */
     vma = split_vmas(task, vma, base, size);
-    if (!vma) return -1;
+    if (!vma) 
+		return -1;
 
     unmap_page_range(task->task_pml4, base, size);
     remove_vma(task, vma);

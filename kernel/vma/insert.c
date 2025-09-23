@@ -5,6 +5,7 @@
 #include "rbtree.h"
 #include "x86-64/memory.h"
 #include "x86-64/paging.h"
+#include "x86-64/types.h"
 #include <types.h>
 
 #include <kernel/mem.h>
@@ -79,8 +80,23 @@ struct vma *add_executable_vma(struct task *task, char *name, void *addr,
 	size_t size, int flags, void *src, size_t len)
 {
 	/* LAB 4: your code here. */
-	struct vma *vma = add_vma(task, name, addr, size, flags);
-	return vma;
+	struct vma *vma = kmalloc(sizeof(*vma));
+	if(!vma){
+		return NULL;
+	}
+	vma->vm_src = (void*) src;
+	vma->vm_len = (size_t) len;
+	vma->vm_name = (char*) name;
+	vma->vm_base = (void*)addr;
+	vma->vm_end = (void*)((uintptr_t)addr + size);
+	vma->vm_flags = (int) flags;
+
+	if (insert_vma(task,vma) < 0){
+		return NULL;
+	}
+
+	vma = merge_vmas(task, vma);
+	return vma;	
 }
 
 /* A simplified wrapper to add anonymous VMAs, i.e. VMAs not backed by an
@@ -101,99 +117,38 @@ struct vma *add_anonymous_vma(struct task *task, char *name, void *addr,
  *
  * Returns the VMA if it could be added. NULL otherwise.
  */
+
 struct vma *add_vma(struct task *task, char *name, void *addr, size_t size,
 	int flags)
 {
 	/* LAB 4: your code here. */
-/* 	struct vma *vma = kmalloc(sizeof(*vma));
-	if(!vma){
-		return NULL;
-	}
-
-	vma->vm_flags = flags;
-	vma->vm_name  = name; 
+	struct vma *vma;
+	uint64_t start;
 	size = (size + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
-
-	list_init(&vma->vm_mmap);
-
-	if(addr){
-		uintptr_t base = ((uintptr_t)addr) & ~(PAGE_SIZE - 1);
-		uintptr_t end  = base + size;
-		vma->vm_base = (void*)base;
-		vma->vm_end = (void*)end;
-		vma->vm_rb.child[0] = vma->vm_rb.child[1] = NULL;  
-
-		if (insert_vma(task, vma) == 0) 
+	
+	if(addr != NULL)
+	{	
+		vma = add_executable_vma(task, name, addr, size, flags, NULL, 0);
+		if (vma)
 			return vma;
 
-        //uint64_t top = (uint64_t)addr;
-		uint64_t top = ((uint64_t)addr) & ~(PAGE_SIZE - 1);
-        struct list *node;
-        list_foreach_rev(&task->task_mmap, node) {
-            struct vma *curr = container_of(node, struct vma, vm_mmap);
-			if ((uint64_t)curr->vm_end > top)
-        		continue;
-
-            if (top - (uint64_t)curr->vm_end >= size) {
-                vma->vm_base = (void*)(top - size);
-                vma->vm_end  = (void*)top;
-                if (insert_vma(task, vma) == 0) 
-					return vma;
-            }
-            top = (uint64_t)curr->vm_base;
-        }
-		if (top >= size) {
-			vma->vm_base = (void*)(top - size);
-			vma->vm_end  = (void*)top;
-			if (insert_vma(task, vma) == 0) 
+		start = (uint64_t)addr;
+		for (uint64_t base = start; base >= PAGE_SIZE; base -=size){
+			vma = add_executable_vma(task, name, (void *)base, size, flags, NULL, 0);
+			if(vma)
 				return vma;
 		}
-
-		top = USER_LIM & ~(PAGE_SIZE - 1);
-		list_foreach_rev(&task->task_mmap, node) {
-			struct vma *curr = container_of(node, struct vma, vm_mmap);
-			if ((uint64_t)curr->vm_end > top)
-				continue;
-
-			if (top <= (uint64_t)addr)
-				break;
-
-			if (top - (uint64_t)curr->vm_end >= size) {
-				uint64_t base = top - size;
-				if (base >= (uint64_t)addr) { 
-					vma->vm_base = (void*)base;
-					vma->vm_end  = (void*)top;
-					if (insert_vma(task, vma) == 0) 
-						return vma;
-				}
-			}
-			top = (uint64_t)curr->vm_base;
+		for (uint64_t base = USER_LIM - size; base > start; base -= size){
+			vma = add_executable_vma(task, name, (void *)base, size, flags, NULL, 0);
+			if(vma)
+				return vma;	
 		}
 	} else {
-		//uint64_t current_addr = USER_LIM; 
-		uint64_t current_addr = USER_LIM & ~(PAGE_SIZE - 1);
-		struct list *node;
-
-		list_foreach_rev(&task->task_mmap, node) {
-			struct vma *curr = container_of(node, struct vma, vm_mmap);
-			if ((uint64_t)curr->vm_end <= current_addr && 
-				current_addr - (uint64_t)curr->vm_end >= size) {
-				vma->vm_base = (void*)current_addr - size;
-				vma->vm_end = (void*) current_addr;
-				if (insert_vma(task, vma) == 0) 
-					return vma;
-			}
-			current_addr = (uint64_t)curr->vm_base;
-		}
-		if (current_addr - PAGE_SIZE >= size) { 
-            vma->vm_base = (void*)current_addr - size;
-            vma->vm_end = (void*)current_addr;
-			if (insert_vma(task, vma) == 0) 
+		for (uint64_t base = USER_LIM - size; base >= PAGE_SIZE; base -= size){
+			vma = add_executable_vma(task, name, (void *)base, size, flags, NULL, 0);
+			if(vma)
 				return vma;
-        } else {
-			kfree(vma);
-			return NULL;
 		}
-	} */
+	}		
 	return NULL;
 }

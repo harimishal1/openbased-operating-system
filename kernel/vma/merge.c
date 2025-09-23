@@ -1,4 +1,5 @@
 
+#include "x86-64/paging.h"
 #include <task.h>
 #include <vma.h>
 
@@ -14,7 +15,12 @@ struct vma *merge_vma(struct task *task, struct vma *lhs, struct vma *rhs)
 {
 	/* LAB 4: your code here. */
 
-	if (lhs->vm_end != rhs->vm_base && rhs->vm_end != lhs->vm_base)
+	if (!page_aligned((uintptr_t)lhs->vm_base) ||
+	!page_aligned((uintptr_t)lhs->vm_end)  ||
+	!page_aligned((uintptr_t)rhs->vm_base) ||
+	!page_aligned((uintptr_t)rhs->vm_end))
+		return NULL;
+	if (lhs->vm_end != rhs->vm_base )
         return NULL;
     if (lhs->vm_flags != rhs->vm_flags) 
 		return NULL;
@@ -25,11 +31,7 @@ struct vma *merge_vma(struct task *task, struct vma *lhs, struct vma *rhs)
     if (lhs->vm_len != rhs->vm_len)   
 		return NULL;
 
-    if (lhs->vm_end == rhs->vm_base) {
-        lhs->vm_end = rhs->vm_end;
-    } else if (rhs->vm_end == lhs->vm_base) {
-        lhs->vm_base = rhs->vm_base;
-    }
+    lhs->vm_end = rhs->vm_end;
 
     remove_vma(task, rhs);
     kfree(rhs);
@@ -44,6 +46,22 @@ struct vma *merge_vma(struct task *task, struct vma *lhs, struct vma *rhs)
 struct vma *merge_vmas(struct task *task, struct vma *vma)
 {
 	/* LAB 4: your code here. */
+    if (!task || !vma)
+        return vma;
+
+    if (vma->vm_mmap.prev != &task->task_mmap) {
+        struct vma *prev = container_of(vma->vm_mmap.prev, struct vma, vm_mmap);
+        struct vma *merged = merge_vma(task, prev, vma);
+        if (merged)
+            vma = merged; 
+    }
+
+    if (vma->vm_mmap.next != &task->task_mmap) {
+        struct vma *next = container_of(vma->vm_mmap.next, struct vma, vm_mmap);
+        struct vma *merged = merge_vma(task, vma, next);
+        if (merged)
+            vma = merged;
+    }
 	return vma;
 }
 

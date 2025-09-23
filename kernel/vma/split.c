@@ -16,6 +16,11 @@ struct vma *split_vma(struct task *task, struct vma *lhs, void *addr)
 	if (addr <= lhs->vm_base || addr >= lhs->vm_end) {
 		return lhs;
 	}
+	
+	if (!page_aligned((uintptr_t)addr)) {
+    	return NULL;
+	}
+
 	struct vma *rhs = kmalloc(sizeof(*lhs));
 	if (!rhs) {
 		return NULL;
