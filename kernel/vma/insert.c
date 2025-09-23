@@ -80,7 +80,7 @@ struct vma *add_executable_vma(struct task *task, char *name, void *addr,
 	size_t size, int flags, void *src, size_t len)
 {
 	/* LAB 4: your code here. */
-	struct vma *vma = kmalloc(sizeof(*vma));
+	struct vma *vma = kmalloc(sizeof(struct vma));
 	if(!vma){
 		return NULL;
 	}

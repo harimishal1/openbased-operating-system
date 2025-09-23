@@ -62,6 +62,12 @@ struct vma *merge_vmas(struct task *task, struct vma *vma)
         if (merged)
             vma = merged;
     }
+
+    /* merge_vma(task, vma, container_of(vma->vm_mmap.next,struct vma, vm_mmap));
+    struct vma *merged = merge_vma(task, container_of(vma->vm_mmap.prev, struct vma, vm_mmap), vma);
+	if(merged){
+        return merged;
+    } */
 	return vma;
 }
 

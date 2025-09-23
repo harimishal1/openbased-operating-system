@@ -1,4 +1,5 @@
 
+#include "stdio.h"
 #include <lib.h>
 
 void print_vmas(void)
@@ -10,7 +11,6 @@ void print_vmas(void)
 		if (mquery(&info, addr) < 0) {
 			break;
 		}
-
 		addr = info.vm_end;
 		printf("0x%016llx - 0x%016llx ", info.vm_base, info.vm_end);
 

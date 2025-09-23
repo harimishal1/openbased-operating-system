@@ -1,5 +1,6 @@
 
 #include "kernel/sched/task.h"
+#include "stdio.h"
 #include <types.h>
 
 #include <kernel/mem.h>
@@ -94,6 +95,9 @@ void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd,
 {
 	/* LAB 4: your code here. */
 	struct task *task = cur_task;
+	void* aligned_addr = ROUNDDOWN(addr, PAGE_SIZE);
+	void* aligned_end = ROUNDUP(addr + len, PAGE_SIZE);
+	size_t aligned_size = aligned_end - aligned_addr;
 
     len = ROUNDUP(len, PAGE_SIZE);
 
@@ -105,6 +109,11 @@ void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd,
         remove_vma_range(task, addr, len);
     }
 
+    if (flags & MAP_FIXED && !addr) {
+		return MAP_FAILED;
+	}
+
+
 	if (!(flags & MAP_ANONYMOUS) || !(flags & MAP_PRIVATE)) {
         return MAP_FAILED;
     }
@@ -113,15 +122,24 @@ void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd,
         return MAP_FAILED;
     }
 
-    struct vma *vma = add_anonymous_vma(task, "user", addr, len, prot);
-    
-	if (!vma) {
+	if ((prot & PROT_WRITE) && !(prot & PROT_READ)) {
         return MAP_FAILED;
     }
 
+	if ((prot & PROT_EXEC) && !(prot & PROT_EXEC)) {
+        return MAP_FAILED;
+    }
+
+	
+    struct vma *vma = add_anonymous_vma(task, "user", aligned_addr, aligned_size, prot);
+    
+	if (!vma) {
+		return MAP_FAILED;
+    }
+	
     if (flags & MAP_POPULATE) {
-        if (populate_vma_range(task, vma->vm_base, len, prot) < 0) {
-            remove_vma(task, vma);
+		if (populate_vma_range(task, vma->vm_base, len, prot) < 0) {
+			remove_vma(task, vma);
             kfree(vma);
             return MAP_FAILED;
         }

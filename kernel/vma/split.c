@@ -17,9 +17,9 @@ struct vma *split_vma(struct task *task, struct vma *lhs, void *addr)
 		return lhs;
 	}
 	
-	if (!page_aligned((uintptr_t)addr)) {
+	/* if (!page_aligned((uintptr_t)addr)) {
     	return NULL;
-	}
+	} */
 
 	struct vma *rhs = kmalloc(sizeof(*lhs));
 	if (!rhs) {
