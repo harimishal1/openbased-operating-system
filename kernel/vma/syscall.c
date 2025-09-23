@@ -151,6 +151,14 @@ void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd,
 void sys_munmap(void *addr, size_t len)
 {
 	/* LAB 4: your code here. */
+	struct task *task = cur_task;
+	void* aligned_addr = ROUNDDOWN(addr, PAGE_SIZE);
+	void* aligned_end = ROUNDUP(addr + len, PAGE_SIZE);
+	size_t aligned_size = aligned_end - aligned_addr;
+
+	cprintf("addr: %lx, aligned_addr: %lx", addr, aligned_addr);
+	cprintf("size: %x, aligned_size: %x", len, aligned_size);
+	int r = remove_vma_range(task, aligned_addr, aligned_size);
 }
 
 int sys_mprotect(void *addr, size_t len, int prot)

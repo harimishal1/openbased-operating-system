@@ -128,6 +128,9 @@ int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 			return (sys_mquery((struct vma_info*) a1, (void*)a2));
 		case SYS_mmap:
 			return (int64_t)sys_mmap((void*)a1, (size_t)a2, (int)a3, (int)a4, (int)a5, (uintptr_t)a6);
+		case SYS_munmap:
+			sys_munmap((void *)a1, (size_t)a2);
+			return 0;
 		default: 
 			break;
 	}
