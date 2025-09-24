@@ -20,21 +20,21 @@ int do_populate_vma(struct task *task, void *base, size_t size,
 	/* LAB 4: your code here. */
 	int *flags = udata;
 
-	if ((*flags & PROT_READ) && !(vma->vm_flags & PROT_READ)) {
+	if ((*flags & PROT_READ) && !(vma->vm_flags & VM_READ)) {
 		return -1;
 	}
-	if ((*flags & PROT_WRITE) && !(vma->vm_flags & PROT_WRITE)) {
+	if ((*flags & PROT_WRITE) && !(vma->vm_flags & VM_WRITE)) {
 		return -1;
 	}
-	if ((*flags & PROT_EXEC) && !(vma->vm_flags & PROT_EXEC)) {
+	if ((*flags & PROT_EXEC) && !(vma->vm_flags & VM_EXEC)) {
 		return -1;
 	}
 
 	uint64_t populate_flags = PAGE_PRESENT | PAGE_USER;
-	if (vma->vm_flags & PROT_WRITE) {
+	if (vma->vm_flags & VM_WRITE) {
 		populate_flags |= PAGE_WRITE;
 	}
-	if (!(vma->vm_flags & PROT_EXEC)) {
+	if (!(vma->vm_flags & VM_EXEC)) {
 		populate_flags |= PAGE_NO_EXEC;
 	}
 

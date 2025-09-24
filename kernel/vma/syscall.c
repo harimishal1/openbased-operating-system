@@ -125,6 +125,10 @@ void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd,
         return MAP_FAILED;
     }
 
+	if ((uintptr_t)aligned_end >= USER_LIM) {
+		return MAP_FAILED;
+	}
+
     struct vma *vma = add_vma(task, "user", aligned_addr, aligned_size, prot);
     
 	if (!vma) {
@@ -144,8 +148,8 @@ void sys_munmap(void *addr, size_t len)
 {
 	/* LAB 4: your code here. */
 	struct task *task = cur_task;
-	void* aligned_addr = ROUNDDOWN(addr, PAGE_SIZE);
-	void* aligned_end = ROUNDUP(addr + len, PAGE_SIZE);
+	void* aligned_addr = ROUNDUP(addr, PAGE_SIZE);
+	void* aligned_end = ROUNDDOWN(addr + len, PAGE_SIZE);
 	size_t aligned_size = aligned_end - aligned_addr;
 	int r = remove_vma_range(task, aligned_addr, aligned_size);
 }

@@ -14,6 +14,7 @@
 #include <kernel/sched/task.h>
 
 #include <lib.h>
+#include <paging.h>
 extern int task_page_fault_handler(struct task *task, void *va, int flags);
 
 /* LAB 3: your code here. */
@@ -268,11 +269,16 @@ void page_fault_handler(struct int_frame *frame)
 	fault_va = (void *)read_cr2();
 
 	/* LAB 4: your code here */
-	perm = PROT_READ;
-	if (frame->err_code & 0x2)
+	perm = 0;
+	if (frame->err_code & PF_USER) {
+		perm |= PROT_READ;
+	}
+	if (frame->err_code & PF_WRITE) {
 	    perm |= PROT_WRITE;
-	if (frame->err_code & 0x10)
+	}
+	if (frame->err_code & PF_IFETCH) {
 	    perm |= PROT_EXEC;
+	}
 	ret = task_page_fault_handler(cur_task, fault_va, perm);
 	if (ret == 0) {
 		return;
