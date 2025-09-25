@@ -293,8 +293,7 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 	/* LAB 3: your code here. */
 	/* populate_region(task->task_pml4, (void *)(USTACK_TOP - PAGE_SIZE), PAGE_SIZE, PAGE_PRESENT | PAGE_USER | PAGE_WRITE | PAGE_NO_EXEC);
 	uint64_t flags = PAGE_PRESENT | PAGE_USER | PAGE_WRITE | PAGE_NO_EXEC; */
-	int prot_flags = PROT_READ | PROT_WRITE | MAP_ANONYMOUS;
-	add_anonymous_vma(task,"stack", (void *)(USTACK_TOP - PAGE_SIZE), PAGE_SIZE, prot_flags);
+	add_anonymous_vma(task,"stack", (void *)(USTACK_TOP - PAGE_SIZE), PAGE_SIZE, PROT_READ | PROT_WRITE);
 } 
 
 /* Allocates a new task with task_alloc(), loads the named ELF binary using

@@ -1,6 +1,7 @@
 
 #include "error.h"
 #include "kernel/sched/task.h"
+#include "kernel/vma/find.h"
 #include "kernel/vma/show.h"
 #include "stdio.h"
 #include <types.h>
@@ -163,10 +164,10 @@ int sys_mprotect(void *addr, size_t len, int prot)
         return -EINVAL;
     }
 	if ((prot & PROT_WRITE) && !(prot & PROT_READ)) {
-		return -EINVAL;
+		return -EFAULT;
 	}
 	if ((prot & PROT_EXEC) && !(prot & PROT_READ)) {
-		return -EINVAL;
+		return -EFAULT;
 	}
 	if ((prot & PROT_WRITE) && (prot & PROT_EXEC)) {
 		return -EINVAL;
@@ -189,16 +190,16 @@ int sys_madvise(void *addr, size_t len, int advise)
 	void* aligned_end = ROUNDUP(addr + len, PAGE_SIZE);
 	size_t aligned_size = aligned_end - aligned_addr;
 
-    if (!len) return -EINVAL;
-	if ((uintptr_t)aligned_end >= USER_LIM) {
-		return -EINVAL;
+	struct vma *vma = task_find_vma(task, addr);
+	if(!vma || addr < vma->vm_base || addr + len > vma->vm_end){
+		-EFAULT;
 	}
 
     switch (advise) {
 		case MADV_WILLNEED:
-			return populate_vma_range(task, aligned_addr, len, PROT_READ);
+			return populate_vma_range(task, aligned_addr, aligned_size, vma->vm_flags);
 		case MADV_DONTNEED:
-			return unmap_vma_range(task, aligned_addr, len);
+			return unmap_vma_range(cur_task, aligned_addr, aligned_size);
 		default:
 			return -EINVAL;
     }

@@ -1,5 +1,6 @@
 
 #include "kernel/mem/populate.h"
+#include "kernel/mem/init.h"
 #include "kernel/mem/protect.h"
 #include "x86-64/paging.h"
 #include <types.h>
@@ -18,23 +19,23 @@ int do_populate_vma(struct task *task, void *base, size_t size,
 	struct vma *vma, void *udata)
 {
 	/* LAB 4: your code here. */
-	int *flags = udata;
+	int *flags = (int* )udata;
+ 	uint64_t populate_flags = PAGE_PRESENT | PAGE_USER;
 
-	if ((*flags & PROT_READ) && !(vma->vm_flags & VM_READ)) {
+	if ((*flags & PROT_READ) && !(vma->vm_flags & PROT_READ)) {
 		return -1;
 	}
-	if ((*flags & PROT_WRITE) && !(vma->vm_flags & VM_WRITE)) {
+	if ((*flags & PROT_WRITE) && !(vma->vm_flags & PROT_WRITE)) {
 		return -1;
 	}
-	if ((*flags & PROT_EXEC) && !(vma->vm_flags & VM_EXEC)) {
+	if ((*flags & PROT_EXEC) && !(vma->vm_flags & PROT_EXEC)) {
 		return -1;
 	}
 
-	uint64_t populate_flags = PAGE_PRESENT | PAGE_USER;
-	if (vma->vm_flags & VM_WRITE) {
+	if (vma->vm_flags & PROT_WRITE) {
 		populate_flags |= PAGE_WRITE;
 	}
-	if (!(vma->vm_flags & VM_EXEC)) {
+	if (!(vma->vm_flags & PROT_EXEC)) {
 		populate_flags |= PAGE_NO_EXEC;
 	}
 
@@ -46,15 +47,17 @@ int do_populate_vma(struct task *task, void *base, size_t size,
             return 0;
         }
     }
-
-	populate_region(task->task_pml4, base, size, populate_flags | PAGE_WRITE);
+	
+	populate_region(task->task_pml4, base, size, populate_flags);
 
 	if (vma->vm_src) {
 		size_t vma_offset = (uintptr_t)base - (uintptr_t)vma->vm_base;
-		
+		struct page_table *old_pml4 = KADDR(read_cr3());
+		load_pml4((struct page_table *)PADDR(task->task_pml4));
 		if (vma_offset < vma->vm_len) {
 			memcpy(base, vma->vm_src + vma_offset, MIN(size, vma->vm_len - vma_offset));
 		}
+		load_pml4((struct page_table *)PADDR(old_pml4));
 	}
 	protect_region(task->task_pml4, base, size, populate_flags);
 
