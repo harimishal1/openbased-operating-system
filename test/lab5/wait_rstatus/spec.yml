@@ -1,0 +1,14 @@
+name: Wait - Child Exit Status
+description: Basic check of returning the exit status of the child
+
+regexlines:
+  - .PID     1. I'm testing rstatus!
+  - '.PID     0. New task with PID 1'
+  - '.PID     1. New task with PID 2'
+  - '.Parent PID     1. Waiting for child processes to exit...'
+  - .PID     2. I'm the first child! Will return 0x70.
+  - '.PID     2. Exiting gracefully'
+  - '.PID     .. Freed task with PID 2'
+  - '.Parent PID     1. Child with PID 2 exited with status 0x70'
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'

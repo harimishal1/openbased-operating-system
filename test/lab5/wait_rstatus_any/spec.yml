@@ -1,0 +1,18 @@
+name: Wait - Any Child Exit Status
+description: Tests capability of returning the exit status of any exited child
+
+regexlines:
+  - .PID     1. I\'m testing rstatusany!
+  - .PID     1. New task with PID 2
+  - .PID     1. New task with PID 3
+  - .Parent PID     1. Waiting for child processes to exit...
+  - .PID     3. I\'m the second child! Will return 0x71.
+  - .PID     3. Exiting gracefully
+  - .PID     .. Freed task with PID 3
+  - .Parent PID     1. Child with PID 3 exited with status 0x71
+  - .PID     2. I\'m the first child! Will return 0x70.
+  - .PID     2. Exiting gracefully
+  - .PID     .. Freed task with PID 2
+  - .Parent PID     1. Child with PID 2 exited with status 0x70
+  - .PID     1. Exiting gracefully
+  - .PID     .. Freed task with PID 1

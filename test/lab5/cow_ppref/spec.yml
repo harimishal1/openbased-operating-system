@@ -1,0 +1,9 @@
+name: CoW - Reference Counting
+description: Tests reference counting during CoW behaviour
+
+matchlines:
+  - "[PID     1] Exiting gracefully with code 0"
+
+nomatchlines:
+  - "[TESTS] Basic fork+write pattern observed, but no shared pages detected"
+  - "[TESTS] cowfork_ppref() test completed - CoW may not be implemented"

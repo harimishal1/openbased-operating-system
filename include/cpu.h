@@ -42,6 +42,7 @@ struct cpuinfo {
 };
 
 extern struct cpuinfo *this_cpu;
+extern struct cpuinfo *boot_cpu;
 
 
 #endif /* !defined(__ASSEMBLER__) */

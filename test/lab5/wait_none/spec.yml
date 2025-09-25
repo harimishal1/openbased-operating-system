@@ -1,0 +1,8 @@
+name: Wait - No Children
+description: Call wait while there are no children to wait for
+
+required: true
+
+regexlines:
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'

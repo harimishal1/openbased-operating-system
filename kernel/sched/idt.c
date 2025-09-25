@@ -6,6 +6,7 @@
 #include <x86-64/gdt.h>
 #include <x86-64/idt.h>
 
+#include <kernel/acpi.h>
 #include <kernel/sched/idt.h>
 #include <kernel/monitor.h>
 #include <kernel/sched/syscall.h>
