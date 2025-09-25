@@ -269,24 +269,16 @@ void page_fault_handler(struct int_frame *frame)
 	fault_va = (void *)read_cr2();
 
 	/* LAB 4: your code here */
-	perm = 0;
-	if (frame->err_code & PF_USER) {
-		perm |= PROT_READ;
-	}
-	if (frame->err_code & PF_WRITE) {
-	    perm |= PROT_WRITE;
-	}
-	if (frame->err_code & PF_IFETCH) {
-	    perm |= PROT_EXEC;
-	}
+	perm = PROT_READ;
+	if (frame->err_code & PF_WRITE) perm |= PROT_WRITE;
+	if (frame->err_code & PF_IFETCH) perm |= PROT_EXEC;
 	ret = task_page_fault_handler(cur_task, fault_va, perm);
-	if (ret == 0) {
-		return;
-	}
+	if (ret == 0) return;
 
 	/* Handle kernel-mode page faults. */
 	/* LAB 3: your code here. */
 	if (frame->cs == GDT_KCODE) {
+	// if ((frame->cs & 0x3) == 0) {
         cprintf("Kernel page fault at va %p, ip %p\n", fault_va, frame->rip);
         print_int_frame(frame);
         panic("page fault in kernel mode");

@@ -96,22 +96,14 @@ void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd,
 	uintptr_t offset)
 {
 	/* LAB 4: your code here. */
-
 	struct task *task = cur_task;
 	void* aligned_addr = ROUNDDOWN(addr, PAGE_SIZE);
 	void* aligned_end = ROUNDUP(addr + len, PAGE_SIZE);
 	size_t aligned_size = aligned_end - aligned_addr;
 
-    len = ROUNDUP(len, PAGE_SIZE);
-
 	if ((flags & MAP_FIXED) && (addr == NULL)) {
 		return MAP_FAILED;
-	}	
-
-    if (flags & MAP_FIXED) {
-		remove_vma_range(task, aligned_addr, len);
-    }
-	
+	}
 	if (!(flags & MAP_ANONYMOUS) || !(flags & MAP_PRIVATE)) {
         return MAP_FAILED;
     }
@@ -124,10 +116,13 @@ void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd,
 	if ((prot & PROT_EXEC) && !(prot & PROT_READ)) {
         return MAP_FAILED;
     }
-
 	if ((uintptr_t)aligned_end >= USER_LIM) {
 		return MAP_FAILED;
 	}
+
+    if (flags & MAP_FIXED) {
+		remove_vma_range(task, aligned_addr, aligned_size);
+    }
 
     struct vma *vma = add_vma(task, "user", aligned_addr, aligned_size, prot);
     
@@ -135,7 +130,7 @@ void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd,
 		return MAP_FAILED;
     }
     if (flags & MAP_POPULATE) {
-		if (populate_vma_range(task, vma->vm_base, len, prot) < 0) {
+		if (populate_vma_range(task, vma->vm_base, aligned_size, prot) < 0) {
 			remove_vma(task, vma);
             kfree(vma);
             return MAP_FAILED;
@@ -148,37 +143,40 @@ void sys_munmap(void *addr, size_t len)
 {
 	/* LAB 4: your code here. */
 	struct task *task = cur_task;
-	void* aligned_addr = ROUNDUP(addr, PAGE_SIZE);
-	void* aligned_end = ROUNDDOWN(addr + len, PAGE_SIZE);
+	void* aligned_addr = ROUNDDOWN(addr, PAGE_SIZE);
+	void* aligned_end = ROUNDUP(addr + len, PAGE_SIZE);
 	size_t aligned_size = aligned_end - aligned_addr;
+
 	int r = remove_vma_range(task, aligned_addr, aligned_size);
 }
 
 int sys_mprotect(void *addr, size_t len, int prot)
 {
 	/* LAB 4: your code here. */
-    if (!len) return -EINVAL;
-    if ((prot & ~(PROT_READ | PROT_WRITE | PROT_EXEC | PROT_NONE))) {
-        return -EINVAL;
-    }
-	if ((prot & PROT_WRITE) && !(prot & PROT_READ)) {
-		return -EPERM;
-	}
-	if ((prot & PROT_EXEC) && !(prot & PROT_READ)) {
-		return -EPERM;
-	}
-	if ((prot & PROT_WRITE) && (prot & PROT_EXEC)) {
-		return -EPERM;
-	}
-	
-
 	struct task *task = cur_task;
 	void* aligned_addr = ROUNDDOWN(addr, PAGE_SIZE);
 	void* aligned_end = ROUNDUP(addr + len, PAGE_SIZE);
 	size_t aligned_size = aligned_end - aligned_addr;
 
+    if (!len) return -EINVAL;
+    if ((prot & ~(PROT_READ | PROT_WRITE | PROT_EXEC | PROT_NONE))) {
+        return -EINVAL;
+    }
+	if ((prot & PROT_WRITE) && !(prot & PROT_READ)) {
+		return -EINVAL;
+	}
+	if ((prot & PROT_EXEC) && !(prot & PROT_READ)) {
+		return -EINVAL;
+	}
+	if ((prot & PROT_WRITE) && (prot & PROT_EXEC)) {
+		return -EINVAL;
+	}
+	if ((uintptr_t)aligned_end >= USER_LIM) {
+		return -EINVAL;
+	}
+
 	if (protect_vma_range(task, aligned_addr, aligned_size, prot) < 0) {
-		return -ENOSYS;
+		return -1;
 	}
 	return 0;
 }
@@ -186,23 +184,22 @@ int sys_mprotect(void *addr, size_t len, int prot)
 int sys_madvise(void *addr, size_t len, int advise)
 {
 	/* LAB 4: your code here. */
-    struct task *task = cur_task;
+	struct task *task = cur_task;
+	void* aligned_addr = ROUNDDOWN(addr, PAGE_SIZE);
+	void* aligned_end = ROUNDUP(addr + len, PAGE_SIZE);
+	size_t aligned_size = aligned_end - aligned_addr;
 
-    if (!len) 
+    if (!len) return -EINVAL;
+	if ((uintptr_t)aligned_end >= USER_LIM) {
 		return -EINVAL;
-
-    uintptr_t base = ROUNDDOWN((uintptr_t)addr, PAGE_SIZE);
-    len = ROUNDUP(len, PAGE_SIZE);
-
-    if (base + len >= USER_LIM)
-        return -EINVAL;
+	}
 
     switch (advise) {
 		case MADV_WILLNEED:
-			return populate_vma_range(task, (void*)base, len, PROT_READ | PROT_WRITE);
+			return populate_vma_range(task, aligned_addr, len, PROT_READ);
 		case MADV_DONTNEED:
-			return unmap_vma_range(task, (void*)base, len);
+			return unmap_vma_range(task, aligned_addr, len);
 		default:
-			return -ENOSYS;
+			return -EINVAL;
     }
 }

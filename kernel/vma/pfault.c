@@ -13,8 +13,5 @@ int task_page_fault_handler(struct task *task, void *va, int flags)
 {
 	/* LAB 4: your code here. */
 	int ret = populate_vma_range((struct task*) task, ROUNDDOWN(va, PAGE_SIZE), PAGE_SIZE, (int)flags);
-	if (ret < 0) {
-		return ret;
-	}
-	return 0;
+	return ret;
 }
