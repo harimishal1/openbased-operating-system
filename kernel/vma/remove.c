@@ -63,6 +63,21 @@ int do_unmap_vma(struct task *task, void *base, size_t size, struct vma *vma,
 	void *udata)
 {
 	/* LAB 4: your code here. */
+    vma = split_vmas(task, vma, base, size);
+    if (!vma) 
+		return -1;
+
+	struct page_info *page;
+	physaddr_t *entry;
+	
+	for (uintptr_t va = (uintptr_t)base; va < (uintptr_t)base + size; va += PAGE_SIZE) {
+		page = page_lookup(task->task_pml4, (void *)va, &entry);
+
+		if (page && !(*entry & PAGE_DIRTY)) {
+			page_remove(task->task_pml4, (void *)va);
+		}
+	}
+
 	return 0;
 }
 
@@ -73,4 +88,3 @@ int unmap_vma_range(struct task *task, void *base, size_t size)
 {
 	return walk_vma_range(task, base, size, do_unmap_vma, NULL);
 }
-
