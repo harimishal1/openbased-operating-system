@@ -50,8 +50,8 @@ static int boot_map_pde(physaddr_t*entry, uintptr_t base, uintptr_t end,
 		info->pa += HPAGE_SIZE;
 		return 0;
 	} else {
-		ptbl_alloc(entry, base & ~(HPAGE_SIZE - 1), base | (HPAGE_SIZE - 1), walker);
-		return 0;
+		// ptbl_alloc(entry, base & ~(HPAGE_SIZE - 1), base | (HPAGE_SIZE - 1), walker);
+		return ptbl_split(entry, base & ~(HPAGE_SIZE - 1),base | (HPAGE_SIZE - 1), walker);
 	}
 }
 
