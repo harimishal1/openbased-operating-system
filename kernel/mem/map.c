@@ -98,6 +98,24 @@ void boot_map_region(struct page_table *pml4, void *va, size_t size,
 	walk_page_range(pml4, (void*)info.base, (void *)((uintptr_t)info.end), &walker);
 }
 
+/* Creates a mapping in the MMIO region to [pa, pa + size) for
+ * memory-mapped I/O.
+ */
+void *mmio_map_region(physaddr_t pa, size_t size)
+{
+	static uintptr_t base = MMIO_BASE;
+	void *ret;
+
+	size = ROUNDUP(size, PAGE_SIZE);
+	assert(base + size < MMIO_LIM);
+
+	ret = (void *)base;
+	boot_map_region(kernel_pml4, ret, size, pa, PAGE_PRESENT |
+		PAGE_WRITE | PAGE_NO_EXEC | PAGE_WRITE_THROUGH | PAGE_NO_CACHE);
+	base += size;
+
+	return ret;
+}
 
 /**
  * This function parses the mmap entries from the boot_info struct, and maps all

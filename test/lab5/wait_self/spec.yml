@@ -1,0 +1,8 @@
+name: Wait - Waiting for Self
+description: Trying to wait for the current process should fail
+
+required: true
+
+regexlines:
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'

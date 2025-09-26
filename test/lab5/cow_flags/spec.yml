@@ -1,0 +1,5 @@
+name: CoW - Flags Correctness
+description: This test performs checks on page table flags during CoW operation
+
+matchlines:
+  - "[PID     1] Exiting gracefully with code 0"

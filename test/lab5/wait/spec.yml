@@ -1,0 +1,17 @@
+name: Wait - Simple Waiting
+description: Tests a simple waitpid() call
+
+required: true
+
+regexlines:
+  - '.PID     1. New task with PID 2'
+  - '.PID     2. I am the child!'
+  - '.PID     2. Back again!'
+  - '.PID     2. Back again!'
+  - '.PID     2. Back again!'
+  - '.PID     2. Back again!'
+  - '.PID     2. Back again!'
+  - '.PID     .. Freed task with PID 2'
+  - '.PID     1. I am the parent!'
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'
