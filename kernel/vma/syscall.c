@@ -145,7 +145,7 @@ void sys_munmap(void *addr, size_t len)
 	/* LAB 4: your code here. */
 	struct task *task = cur_task;
 	void* aligned_addr = ROUNDDOWN(addr, PAGE_SIZE);
-	void* aligned_end = ROUNDUP(addr + len, PAGE_SIZE);
+	void* aligned_end = ROUNDDOWN(addr + len, PAGE_SIZE);
 	size_t aligned_size = aligned_end - aligned_addr;
 
 	int r = remove_vma_range(task, aligned_addr, aligned_size);
