@@ -18,7 +18,7 @@ int do_protect_vma(struct task *task, void *base, size_t size, struct vma *vma,
 {
 	/* LAB 4 (bonus): your code here. */
 	int *flags = udata;
-	if (*flags == vma->vm_flags) {
+	if (*flags == vma->vm_flags || vma->vm_base == vma->vm_end) {
 		return 0;
 	}
 
