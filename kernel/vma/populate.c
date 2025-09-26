@@ -21,7 +21,6 @@ int do_populate_vma(struct task *task, void *base, size_t size,
 	/* LAB 4: your code here. */
 	int *flags = (int* )udata;
  	uint64_t populate_flags = PAGE_PRESENT | PAGE_USER;
-
 	if ((*flags & PROT_READ) && !(vma->vm_flags & PROT_READ)) {
 		return -1;
 	}
@@ -31,7 +30,6 @@ int do_populate_vma(struct task *task, void *base, size_t size,
 	if ((*flags & PROT_EXEC) && !(vma->vm_flags & PROT_EXEC)) {
 		return -1;
 	}
-
 	if (vma->vm_flags & PROT_WRITE) {
 		populate_flags |= PAGE_WRITE;
 	}
@@ -49,7 +47,6 @@ int do_populate_vma(struct task *task, void *base, size_t size,
     }
 	
 	populate_region(task->task_pml4, base, size, populate_flags);
-
 	if (vma->vm_src) {
 		size_t vma_offset = (uintptr_t)base - (uintptr_t)vma->vm_base;
 		struct page_table *old_pml4 = KADDR(read_cr3());
@@ -71,4 +68,3 @@ int populate_vma_range(struct task *task, void *base, size_t size, int flags)
 {
 	return walk_vma_range(task, base, size, do_populate_vma, &flags);
 }
-

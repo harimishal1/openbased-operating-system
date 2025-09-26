@@ -81,22 +81,6 @@ void task_init(void)
 	 * to tasks.
 	 */
 	/* LAB 3: your code here. */
-	/* size_t size = pid_max * sizeof(struct task *);
-	size_t npages = ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE;
-	struct page_info *page;
-	size_t i;
-	for (i = 0; i < npages; i++) {
-		page = page_alloc(ALLOC_ZERO);
-		if (!page) {
-			panic("task_init: out of memory\n");
-		}
-		page->pp_ref++;
-		if (page_insert(kernel_pml4, page, (void *)(PIDMAP_BASE + i * PAGE_SIZE),
-		    PAGE_WRITE | PAGE_PRESENT | PAGE_NO_EXEC) < 0) {
-			panic("task_init: page_insert failed\n");
-		}
-	}
-	memset(tasks, 0, size); */
 	populate_region(kernel_pml4, (void *)PIDMAP_BASE, pid_max * sizeof(struct task *), 
 	PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
 	memset((void *)PIDMAP_BASE, 0, pid_max * sizeof(struct task *));
@@ -249,7 +233,6 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 			panic("p_memsz is smaller than p_filesz");
 		}
 
-		//uint64_t flags = program_header[i].p_flags;
 		uint64_t flags = (PAGE_PRESENT | PAGE_USER);
 		uint64_t prot_flags = (PROT_READ | MAP_POPULATE);
 		char* task_name = ".rodata";
@@ -270,14 +253,6 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 			task_name = ".text";
 		}
 
-		/* populate_region(task->task_pml4, (void *)va, memsz, flags);
-		load_pml4((struct page_table*)PADDR(task->task_pml4));
-		memcpy((void *)va, binary + program_header[i].p_offset, filesz);
-		if(memsz > filesz){
-			memset((void *)(va + filesz), 0, memsz - filesz);
-		}
-		load_pml4((struct page_table*)PADDR(kernel_pml4));
-		protect_region(task->task_pml4, (void *)va, memsz, flags); */
 		size_t aligned_addr_diff = program_header[i].p_va - ROUNDDOWN(program_header[i].p_va, PAGE_SIZE);
 		add_executable_vma(task, task_name, (void*)va - aligned_addr_diff, ROUNDUP(va + memsz, PAGE_SIZE) - (va - aligned_addr_diff),
 			prot_flags, binary + program_header[i].p_offset - aligned_addr_diff, filesz + aligned_addr_diff);
@@ -291,8 +266,6 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 	 */
 
 	/* LAB 3: your code here. */
-	/* populate_region(task->task_pml4, (void *)(USTACK_TOP - PAGE_SIZE), PAGE_SIZE, PAGE_PRESENT | PAGE_USER | PAGE_WRITE | PAGE_NO_EXEC);
-	uint64_t flags = PAGE_PRESENT | PAGE_USER | PAGE_WRITE | PAGE_NO_EXEC; */
 	add_anonymous_vma(task,"stack", (void *)(USTACK_TOP - PAGE_SIZE), PAGE_SIZE, PROT_READ | PROT_WRITE);
 } 
 
@@ -413,8 +386,6 @@ void task_run(struct task *task)
 	 */
 
 	/* LAB 3: Your code here. */
-	// panic("task_run() not yet implemented");
-
 	if (task != cur_task) {
 		if (cur_task && cur_task->task_status == TASK_RUNNING) {
 			cur_task->task_status = TASK_RUNNABLE;
@@ -446,18 +417,4 @@ void assert_user_mem(struct task *task, void *va, size_t size, int flags)
 			task->task_pid, fault_va);
 		task_destroy(task);
 	}
-
-	// uint64_t page_flags = PAGE_USER;
-	// if (flags & PROT_READ)
-	// 	page_flags |= PAGE_PRESENT;
-	// if (flags & PROT_WRITE)
-	// 	page_flags |= PAGE_WRITE;
-	// if (!(flags & PROT_EXEC))
-	// 	page_flags |= PAGE_NO_EXEC;
-
-	// if (check_user_mem(&fault_va, task->task_pml4, va, size, page_flags) < 0) {
-	// 	cprintf("[PID %5u] Access violation for va %p\n",
-	// 		task->task_pid, fault_va);
-	// 	task_destroy(task);
-	// }
 }

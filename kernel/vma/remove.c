@@ -42,17 +42,12 @@ int do_remove_vma(struct task *task, void *base, size_t size, struct vma *vma,
     vma = split_vmas(task, vma, base, size);
     if (!vma) return -1;
 
-	show_vmas(task);
-
 	struct page_table *old_pml4 = KADDR(read_cr3());
 	load_pml4((struct page_table *)PADDR(task->task_pml4));
-
     unmap_page_range(task->task_pml4, base, size);
     remove_vma(task, vma);
 	kfree(vma);
-
 	load_pml4((struct page_table *)PADDR(old_pml4));
-	show_vmas(task);
 
     return 0;
 }

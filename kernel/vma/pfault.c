@@ -14,8 +14,7 @@
 int task_page_fault_handler(struct task *task, void *va, int flags)
 {
 	/* LAB 4: your code here. */
-
-struct vma *vma = task_find_vma(task, va);
+	struct vma *vma = task_find_vma(task, va);
 	
 	if (!vma || va < vma->vm_base) {
 		return -EFAULT;

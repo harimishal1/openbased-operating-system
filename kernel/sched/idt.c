@@ -278,7 +278,6 @@ void page_fault_handler(struct int_frame *frame)
 	/* Handle kernel-mode page faults. */
 	/* LAB 3: your code here. */
 	if (frame->cs == GDT_KCODE) {
-	// if ((frame->cs & 0x3) == 0) {
         cprintf("Kernel page fault at va %p, ip %p\n", fault_va, frame->rip);
         print_int_frame(frame);
         panic("page fault in kernel mode");
