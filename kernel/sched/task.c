@@ -23,6 +23,7 @@
 #include <kernel/mem.h>
 #include <kernel/sched.h>
 
+extern struct list runq;
 extern int check_user_vma_range(uintptr_t *fault_va, struct task *task, void *base, size_t size, int flags);
 
 pid_t pid_max = 1 << 16;
@@ -295,6 +296,9 @@ void task_create(uint8_t *binary, enum task_type type)
 
 	task->task_ppid = 0;
 	tasks[task->task_pid] = task;
+
+	list_add(&runq, &task->task_node);
+
 	return;
 }
 
@@ -392,6 +396,7 @@ void task_run(struct task *task)
 	if (task != cur_task) {
 		if (cur_task && cur_task->task_status == TASK_RUNNING) {
 			cur_task->task_status = TASK_RUNNABLE;
+			list_add(&runq, &cur_task->task_node);
 		}
 		cur_task = task;
 		cur_task->task_status = TASK_RUNNING;
