@@ -30,7 +30,7 @@ void sched_yield(void)
 		if (cur_task) {
 			task_run(cur_task);
 		} else {
-			halt_kernel();
+			sched_halt();
 		}
 	}
 
