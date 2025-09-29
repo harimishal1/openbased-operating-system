@@ -3,6 +3,7 @@
 #include "kernel/mem/ptbl.h"
 #include "kernel/mem/tlb.h"
 #include "kernel/sched/task.h"
+#include "kernel/vma/show.h"
 #include "lib.h"
 #include "types.h"
 #include "x86-64/memory.h"
@@ -33,14 +34,9 @@ struct task *task_clone(struct task *task)
 
 	// copy over register frame
 	child_task->task_frame = task->task_frame;
-	
-	// allocate new page for child process pml4
-	struct page_info *child_pml4_page = page_alloc(ALLOC_ZERO);
-	if (!child_pml4_page) return NULL;
-	child_pml4_page->pp_ref++;
-	physaddr_t pa = page2pa(child_pml4_page);
-	struct page_table *child_pml4 = (struct page_table *)KADDR(pa);
-	child_task->task_pml4 = child_pml4;
+
+	rb_init(&child_task->task_rb);
+	list_init(&child_task->task_mmap);
 
 	// loop over all vmas in parent task
 	struct list *node;
@@ -63,16 +59,21 @@ struct task *task_clone(struct task *task)
 		physaddr_t *entry;
         for (uintptr_t va = (uintptr_t)current_vma->vm_base; va < (uintptr_t)current_vma->vm_end; va += PAGE_SIZE) {
 			page = page_lookup(task->task_pml4, (void *)va, &entry);
-			if (!page || !(*entry & PAGE_PRESENT)) continue;
-
-			// mark page as read-only
-			*entry &= ~PAGE_WRITE;
-			tlb_invalidate(task->task_pml4, (void *)va);
-
-			// add page to child page table
-			page_insert(child_pml4, page, (void *)va, PAGE_PRESENT | PAGE_USER);
+			// if (!page || !(*entry & PAGE_PRESENT)) continue;
+			if (page) {
+				
+				// mark page as read-only
+				*entry &= ~PAGE_WRITE;
+				tlb_invalidate(task->task_pml4, (void *)va);
+				
+				// add page to child page table
+				page_insert(child_task->task_pml4, page, (void *)va, PAGE_PRESENT | PAGE_USER);
+			}
         }
     }
+
+	show_vmas(task);
+	show_vmas(child_task);
 
 	// set task metadata
 	child_task->task_ppid = task->task_pid;
