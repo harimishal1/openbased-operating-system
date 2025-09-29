@@ -2,6 +2,7 @@
 #include "kernel/mem/insert.h"
 #include "kernel/mem/ptbl.h"
 #include "kernel/mem/tlb.h"
+#include "kernel/sched/idt.h"
 #include "kernel/sched/task.h"
 #include "kernel/vma/show.h"
 #include "lib.h"
@@ -59,7 +60,6 @@ struct task *task_clone(struct task *task)
 		physaddr_t *entry;
         for (uintptr_t va = (uintptr_t)current_vma->vm_base; va < (uintptr_t)current_vma->vm_end; va += PAGE_SIZE) {
 			page = page_lookup(task->task_pml4, (void *)va, &entry);
-			// if (!page || !(*entry & PAGE_PRESENT)) continue;
 			if (page) {
 				
 				// mark page as read-only
@@ -72,18 +72,12 @@ struct task *task_clone(struct task *task)
         }
     }
 
-	show_vmas(task);
-	show_vmas(child_task);
-
-	// set task metadata
-	child_task->task_ppid = task->task_pid;
-	child_task->task_type = task->task_type;
 	if (child_task->task_type == TASK_TYPE_USER) {
 		nuser_tasks++;
 	}
-	child_task->task_frame.rax = 0;
-	tasks[child_task->task_pid] = child_task;
 	list_add(&runq, &child_task->task_node);
+
+	child_task->task_frame.rax = 0;
 
 	return child_task;
 }

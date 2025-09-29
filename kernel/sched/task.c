@@ -342,6 +342,10 @@ void task_destroy(struct task *task)
 {
 	task_free(task);
 	/* LAB 5: your code here. */
+	cur_task->task_status = TASK_DYING;
+	if (cur_task && task == cur_task) {
+		sched_yield();
+	}
 
 	cprintf("Destroyed the only task - nothing more to do!\n");
 	halt_kernel();

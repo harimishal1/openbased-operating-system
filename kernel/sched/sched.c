@@ -27,7 +27,7 @@ void sched_yield(void)
 {
 	/* LAB 5: your code here. */
 	if (list_is_empty(&runq)) {
-		if (cur_task) {
+		if (cur_task && (cur_task->task_status != TASK_NOT_RUNNABLE && cur_task->task_status != TASK_DYING)) {
 			task_run(cur_task);
 		} else {
 			sched_halt();
