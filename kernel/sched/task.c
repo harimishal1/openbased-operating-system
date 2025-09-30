@@ -8,6 +8,7 @@
 #include "kernel/vma/protect.h"
 #include "kernel/vma/remove.h"
 #include "kernel/vma/user.h"
+#include "list.h"
 #include "stdio.h"
 #include "x86-64/memory.h"
 #include "x86-64/paging.h"
@@ -308,6 +309,8 @@ void task_free(struct task *task)
 {
 	struct task *waiting;
 	/* LAB 5: your code here. */
+	list_del(&task->task_node);
+
 	/* If we are freeing the current task, switch to the kernel_pml4
 	 * before freeing the page tables, just in case the page gets re-used.
 	 */
@@ -342,10 +345,11 @@ void task_destroy(struct task *task)
 {
 	task_free(task);
 	/* LAB 5: your code here. */
-	cur_task->task_status = TASK_DYING;
-	if (cur_task && task == cur_task) {
-		sched_yield();
-	}
+	sched_yield();
+	// cur_task->task_status = TASK_DYING;
+	// if (cur_task && task == cur_task) {
+	// 	sched_yield();
+	// }
 
 	cprintf("Destroyed the only task - nothing more to do!\n");
 	halt_kernel();

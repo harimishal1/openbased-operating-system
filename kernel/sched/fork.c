@@ -67,7 +67,8 @@ struct task *task_clone(struct task *task)
 				tlb_invalidate(task->task_pml4, (void *)va);
 				
 				// add page to child page table
-				page_insert(child_task->task_pml4, page, (void *)va, PAGE_PRESENT | PAGE_USER);
+				uint64_t flags = *entry & PAGE_UMASK;
+				page_insert(child_task->task_pml4, page, (void *)va, flags);
 			}
         }
     }
@@ -78,6 +79,7 @@ struct task *task_clone(struct task *task)
 	list_add(&runq, &child_task->task_node);
 
 	child_task->task_frame.rax = 0;
+	task->task_frame.rax = child_task->task_pid;
 
 	return child_task;
 }
