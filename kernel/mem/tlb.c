@@ -13,7 +13,7 @@ void tlb_invalidate(struct page_table *pml4, void *va)
 {
 	/* Flush the entry only if we are modifying the current address space. */
 	/* LAB 5: update your code here */
-    if (PADDR(pml4) == read_cr3()) {
+    if (pml4 == (struct page_table *)KADDR(read_cr3())) {
         flush_page(va);
     }
 }
