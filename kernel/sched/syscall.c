@@ -72,6 +72,7 @@ static int sys_kill(pid_t pid)
 		return -1;
 	}
 
+	task->task_status = TASK_DYING;
 
 	cprintf("[PID %5u] Exiting gracefully\n", task->task_pid);
 	task_destroy(task);
@@ -91,6 +92,8 @@ static int sys_exit(int rcode)
 		return -1;
 	}
 	task->task_exit_status = rcode;
+
+	task->task_status = TASK_DYING;
 
 	cprintf("[PID %5u] Exiting gracefully with code %d\n", task->task_pid, rcode);
 
@@ -140,6 +143,10 @@ int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 		case SYS_yield:
 			sched_yield();
 			return 0;
+		case SYS_wait:
+			sys_wait((int *) a1);
+		case SYS_waitpid:
+			sys_waitpid((pid_t) a1, (int *) a2, (int) a3);
 		case SYS_fork:
 			return sys_fork();
 		default: 

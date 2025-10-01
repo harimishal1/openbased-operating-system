@@ -311,6 +311,19 @@ void task_free(struct task *task)
 	/* LAB 5: your code here. */
 	list_del(&task->task_node);
 
+	struct task *parent_task = pid2task(task->task_ppid, 0);
+	if (parent_task && parent_task->task_status == TASK_NOT_RUNNABLE) {
+		if (parent_task->task_wait == NULL || parent_task->task_wait == task) {
+			if (parent_task->task_exit_status) {
+				parent_task->task_exit_status = task->task_exit_status;
+			}
+
+			parent_task->task_frame.rax = task->task_pid;
+			parent_task->task_status = TASK_RUNNABLE;
+			list_add(&runq, &parent_task->task_node);
+		}
+	}
+
 	/* If we are freeing the current task, switch to the kernel_pml4
 	 * before freeing the page tables, just in case the page gets re-used.
 	 */
@@ -333,7 +346,6 @@ void task_free(struct task *task)
 	    cur_task ? cur_task->task_pid : task->task_ppid,
  	    task->task_pid);
 
-
 	/* Free the task. */
 	kfree(task);
 }
@@ -343,13 +355,19 @@ void task_free(struct task *task)
  */
 void task_destroy(struct task *task)
 {
+	bool freeing_current_task = false;
+	if (cur_task && task == cur_task) {
+		freeing_current_task = true;
+	}
+
 	task_free(task);
 	/* LAB 5: your code here. */
-	sched_yield();
-	// cur_task->task_status = TASK_DYING;
-	// if (cur_task && task == cur_task) {
-	// 	sched_yield();
-	// }
+	// sched_yield();
+	if (freeing_current_task) {
+		sched_yield();
+	} else {
+		return;
+	}
 
 	cprintf("Destroyed the only task - nothing more to do!\n");
 	halt_kernel();
