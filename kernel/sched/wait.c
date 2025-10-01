@@ -11,22 +11,24 @@ pid_t sys_wait(int *rstatus)
 {
 	/* LAB 5: your code here. */
     struct task *child;
-	struct list *node;
-    list_foreach(&cur_task->task_children, node) {
+	struct list *node, *next;
+	list_foreach_safe(&cur_task->task_children, node, next) {
 		child = container_of(node, struct task, task_child);
-        if (child->task_status == TASK_DYING) {
-            if (rstatus) {
-                *rstatus = child->task_exit_status;
+		if (child->task_status == TASK_DYING) {
+			if (child->task_exit_status) {
+				*rstatus = child->task_exit_status;
 			}
-            task_destroy(child);
-            return child->task_pid;
-        }
-    }
+			pid_t child_pid = child->task_pid;
+			task_destroy(child);
+			return child_pid;
+		}
+	}
 
     cur_task->task_wait = NULL;
     cur_task->task_status = TASK_NOT_RUNNABLE;
     sched_yield();
     return sys_wait(rstatus);
+	// return -ENOSYS;
 }
 
 pid_t sys_waitpid(pid_t pid, int *rstatus, int opts)
@@ -37,8 +39,9 @@ pid_t sys_waitpid(pid_t pid, int *rstatus, int opts)
 	if (!task) return -1;
 
 	if (task->task_status == TASK_DYING) {
-        if (rstatus) {
+        if (task->task_exit_status) {
 			*rstatus = task->task_exit_status;
+			cprintf("In sys_waitpid: Task %d exit status: %5u\n", pid, *rstatus);
 		}
         task_destroy(task);
         return pid;

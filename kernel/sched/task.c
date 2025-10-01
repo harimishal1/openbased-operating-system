@@ -288,6 +288,8 @@ void task_create(uint8_t *binary, enum task_type type)
 	}
 	rb_init(&task->task_rb);
 	list_init(&task->task_mmap);
+	list_init(&task->task_children);
+	list_init(&task->task_zombies);
 	task_load_elf (task, binary);
 	task->task_type = type;
 
@@ -314,7 +316,7 @@ void task_free(struct task *task)
 	struct task *parent_task = pid2task(task->task_ppid, 0);
 	if (parent_task && parent_task->task_status == TASK_NOT_RUNNABLE) {
 		if (parent_task->task_wait == NULL || parent_task->task_wait == task) {
-			if (parent_task->task_exit_status) {
+			if (task->task_exit_status) {
 				parent_task->task_exit_status = task->task_exit_status;
 			}
 

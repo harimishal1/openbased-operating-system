@@ -77,6 +77,8 @@ struct task *task_clone(struct task *task)
 		nuser_tasks++;
 	}
 	list_add(&runq, &child_task->task_node);
+	list_add(&task->task_children, &child_task->task_child);
+
 
 	child_task->task_frame.rax = 0;
 	task->task_frame.rax = child_task->task_pid;
