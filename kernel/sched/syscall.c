@@ -144,9 +144,9 @@ int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 			sched_yield();
 			return 0;
 		case SYS_wait:
-			sys_wait((int *) a1);
+			return sys_wait((int *) a1);
 		case SYS_waitpid:
-			sys_waitpid((pid_t) a1, (int *) a2, (int) a3);
+			return sys_waitpid((pid_t) a1, (int *) a2, (int) a3);
 		case SYS_fork:
 			return sys_fork();
 		default: 
