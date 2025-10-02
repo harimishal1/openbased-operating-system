@@ -1,5 +1,6 @@
 
 #include <types.h>
+#include <cpu.h>
 #include <paging.h>
 
 #include <kernel/mem.h>

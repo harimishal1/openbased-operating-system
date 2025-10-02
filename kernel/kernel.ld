@@ -14,6 +14,7 @@ SECTIONS {
 
 	.boot ALIGN(4K) : {
 		*/kernel/boot.o (.text .data .bss)
+		*/kernel/boot_ap.o (.text .data .bss)
 		boot_end = .;
 	} :.boot
 

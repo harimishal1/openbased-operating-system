@@ -6,8 +6,7 @@
 
 #include "rand.h"
 
-extern size_t nslabs;
-extern struct slab slabs[];
+#include <cpu.h>
 
 #define FREE_PROB 0.02
 #define SLAB_INFO_FREE_PROB 0.4

@@ -1,0 +1,22 @@
+name: CoW - Basic Test
+description: Test basic Copy-on-Write functionality
+
+required: true
+
+regexlines:
+  - '.PID     1. New task with PID 2'
+  - '.PID     2. I am the child!'
+  - '.PID     1. I am the parent!'
+  - '.PID     1. Exiting gracefully'
+  - '.PID     .. Freed task with PID 2'
+  - '.PID     1. Freed task with PID 1'
+
+---
+
+name: (2 cores)
+qemu: -smp 2
+
+---
+
+name: (4 cores)
+qemu: -smp 4

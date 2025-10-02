@@ -4,6 +4,7 @@
 #include <types.h>
 #include <list.h>
 #include <rbtree.h>
+#include <spinlock.h>
 
 #include <x86-64/idt.h>
 #include <x86-64/memory.h>
@@ -71,4 +72,9 @@ struct task {
 
 	/* The anchor node (for zombies or the run queue) */
 	struct list task_node;
+
+#ifndef USE_BIG_KERNEL_LOCK
+	/* Per-task lock */
+	struct spinlock task_lock;
+#endif
 };

@@ -1,6 +1,8 @@
 
 #include <types.h>
+#include <cpu.h>
 
+#include <kernel/acpi.h>
 #include <kernel/mem.h>
 #include <kernel/sched.h>
 #include <kernel/vma.h>

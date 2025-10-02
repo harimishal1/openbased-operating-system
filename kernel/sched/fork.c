@@ -1,4 +1,5 @@
 
+#include <cpu.h>
 #include <error.h>
 #include <list.h>
 

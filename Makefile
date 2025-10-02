@@ -188,8 +188,8 @@ USER_CFLAGS += -DOpenLSD_USER
 
 # Linker flags
 USER_LDFLAGS := -n                   # Specific output format
-USER_LDFLAGS := -nostdlib            # We bring our own library
-USER_LDFLAGS := -Tuser/user.ld       # Use custom linker script
+USER_LDFLAGS += -nostdlib            # We bring our own library
+USER_LDFLAGS += -Tuser/user.ld       # Use custom linker script
 
 
 ###############################
@@ -211,6 +211,10 @@ KERNEL_CFLAGS += -DKERNEL_VMA=0xFFFF800000000000
 # mixing user and kernel code.
 KERNEL_CFLAGS += -DOpenLSD_KERNEL
 
+# This allows us to choose between BKL and fine-grained locking for the kernel
+ifeq ($(BIG_KERNEL_LOCK),1)
+KERNEL_CFLAGS += -DUSE_BIG_KERNEL_LOCK
+endif
 
 # Linker flags
 KERNEL_LDFLAGS := -n                   # Specific output format
@@ -318,7 +322,7 @@ define gdbrc_userbin
 
     @: Add the selected test user program symbols, if running a test AND the test has user symbols
 	@if [ "$(TEST)" != "" ]; then \
-		symbol_file=$$(bash -c 'echo obj/test/$(subst _,/,$(TEST))/user'); \
+		symbol_file=$$(bash -c 'echo obj/test/$(TEST)/user' | sed 's/_/\//'); \
 		if [ -f $$symbol_file ]; then \
 			echo "add-symbol-file $$symbol_file" >> $@; \
 		fi \

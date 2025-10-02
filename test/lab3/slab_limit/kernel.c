@@ -4,7 +4,7 @@
 #include <kernel/mem.h>
 #include <kernel/test/test.h>
 
-extern size_t nslabs;
+#include <cpu.h>
 
 static int run_test() {
 	void *p;

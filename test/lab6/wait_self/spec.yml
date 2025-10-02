@@ -1,0 +1,11 @@
+name: Wait - Waiting for Self
+description: Trying to wait for the current process should fail
+
+regexlines:
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'
+
+---
+
+name: (2 cores)
+qemu: -smp 2

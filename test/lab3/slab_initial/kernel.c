@@ -4,7 +4,7 @@
 #include <kernel/mem.h>
 #include <kernel/test/test.h>
 
-extern struct slab slabs[];
+#include <cpu.h>
 
 static int run_test() {
 	struct slab *slab;

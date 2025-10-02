@@ -1,0 +1,15 @@
+name: Simple Yield
+description: Testing simple yield behaviour
+
+required: true
+
+regexlines:
+  - '.PID     1. Hello!'
+  - '.PID     1. I am back! This is round 1'
+  - '.PID     1. I am back! This is round 2'
+  - '.PID     1. I am back! This is round 3'
+  - '.PID     1. I am back! This is round 4'
+  - '.PID     1. I am back! This is round 5'
+  - '.PID     1. I am done! Good bye!'
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'

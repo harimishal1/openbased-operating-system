@@ -1,0 +1,17 @@
+name: Forking - Basic
+description: Perform a basic fork and yield to the child; this does not yet require pre-emption
+
+required: true
+
+regexlines:
+  - '.PID     1. New task with PID 2'
+  - '.PID     2. I am the child!'
+  - '.PID     1. I am the parent!'
+  - '.PID     1. Exiting gracefully'
+  - '.PID     .. Freed task with PID 2'
+  - '.PID     1. Freed task with PID 1'
+
+---
+
+name: (2 cores)
+qemu: -smp 2

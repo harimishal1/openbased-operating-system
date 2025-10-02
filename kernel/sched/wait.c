@@ -1,5 +1,6 @@
 
 #include <types.h>
+#include <cpu.h>
 #include <error.h>
 #include <lib.h>
 

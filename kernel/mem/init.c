@@ -158,6 +158,13 @@ void mem_init(struct boot_info *boot_info)
 	page_init_ext(boot_info);
 }
 
+void mem_init_mp(void)
+{
+	/* Set up kernel stacks for each CPU here. Make sure they have a guard
+	 * page.
+	 */
+	/* LAB 6: your code here. */
+}
 
 /*
  * Initialize page structure and memory free list. After this is done, NEVER
