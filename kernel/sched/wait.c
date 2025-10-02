@@ -34,6 +34,7 @@ pid_t sys_wait(int *rstatus)
     }
 
     cur_task->task_wait = NULL;
+    cur_task->task_wait_exit_status = rstatus;
     cur_task->task_status = TASK_NOT_RUNNABLE;
     sched_yield();
     return sys_wait(rstatus);
@@ -78,6 +79,7 @@ pid_t sys_waitpid(pid_t pid, int *rstatus, int opts)
     }
 
     cur_task->task_wait = child;
+    cur_task->task_wait_exit_status = rstatus;
     cur_task->task_status = TASK_NOT_RUNNABLE;
     sched_yield();
     return sys_waitpid(pid, rstatus, opts);

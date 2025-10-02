@@ -316,8 +316,11 @@ void task_free(struct task *task)
 	struct task *parent_task = pid2task(task->task_ppid, 0);
 	if (parent_task && parent_task->task_status == TASK_NOT_RUNNABLE) {
 		if (parent_task->task_wait == NULL || parent_task->task_wait == task) {
-			if (task->task_exit_status) {
-				parent_task->task_exit_status = task->task_exit_status;
+			if (parent_task->task_wait_exit_status) {
+				struct page_table *old_pml4 = KADDR(read_cr3());
+				load_pml4((struct page_table *)PADDR(parent_task->task_pml4));
+				*parent_task->task_wait_exit_status = task->task_exit_status;
+				load_pml4((struct page_table *)PADDR(old_pml4));
 			}
 
 			parent_task->task_frame.rax = task->task_pid;
@@ -357,19 +360,9 @@ void task_free(struct task *task)
  */
 void task_destroy(struct task *task)
 {
-	bool freeing_current_task = false;
-	if (cur_task && task == cur_task) {
-		freeing_current_task = true;
-	}
-
 	task_free(task);
 	/* LAB 5: your code here. */
-	// sched_yield();
-	if (freeing_current_task) {
-		sched_yield();
-	} else {
-		return;
-	}
+	sched_yield();
 
 	cprintf("Destroyed the only task - nothing more to do!\n");
 	halt_kernel();
