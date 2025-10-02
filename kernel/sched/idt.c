@@ -190,7 +190,6 @@ void divide_handler(struct int_frame *frame)
 void irq_handler(struct int_frame *frame)
 {
     lapic_eoi();
-	cprintf(":AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
 	sched_yield();
 }
 
