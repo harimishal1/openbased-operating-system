@@ -312,24 +312,48 @@ void task_free(struct task *task)
 {
 	struct task *waiting;
 	/* LAB 5: your code here. */
-	list_del(&task->task_node);
 
-	struct task *parent_task = pid2task(task->task_ppid, 0);
-	if (parent_task && parent_task->task_status == TASK_NOT_RUNNABLE) {
-		if (parent_task->task_wait == NULL || parent_task->task_wait == task) {
-			if (parent_task->task_wait_exit_status) {
-				struct page_table *old_pml4 = KADDR(read_cr3());
-				load_pml4((struct page_table *)PADDR(parent_task->task_pml4));
-				*parent_task->task_wait_exit_status = task->task_exit_status;
-				load_pml4((struct page_table *)PADDR(old_pml4));
+	if (task->task_ppid != 0) {
+		struct task *waiting = pid2task(task->task_ppid, 0);
+		if (waiting) {
+			if (waiting && waiting->task_status == TASK_NOT_RUNNABLE && 
+				(waiting->task_wait == NULL || waiting->task_wait == task)) {
+				if (waiting->task_wait_exit_status) {
+					struct page_table *old_pml4 = KADDR(read_cr3());
+					load_pml4((struct page_table *)PADDR(waiting->task_pml4));
+					*(waiting->task_wait_exit_status) = task->task_exit_status;
+					load_pml4((struct page_table *)PADDR(old_pml4));
+				}
+				waiting->task_frame.rax = task->task_pid;
+				waiting->task_status = TASK_RUNNABLE;
+				list_add(&runq, &waiting->task_node);
+				list_del(&task->task_child);
+			} else {
+				list_del(&task->task_node);
+				list_del(&task->task_child);
+				list_add_tail(&waiting->task_zombies, &task->task_node);
+				sched_yield();
+				return;
 			}
-
-			parent_task->task_frame.rax = task->task_pid;
-			parent_task->task_status = TASK_RUNNABLE;
-			list_add(&runq, &parent_task->task_node);
 		}
 	}
-
+	
+	struct list *node, *next;
+	struct task *child;
+	list_foreach_safe(&task->task_children, node, next) {
+		child = container_of(node, struct task, task_child);
+		list_del(&child->task_child);
+		list_init(&child->task_child);
+        child->task_ppid = 0;
+	}
+	
+	list_foreach_safe(&task->task_zombies, node, next) {
+	    child = container_of(node, struct task, task_child);
+	    list_del(&child->task_node);
+	    task_free(child);
+	}
+	
+	
 	/* If we are freeing the current task, switch to the kernel_pml4
 	 * before freeing the page tables, just in case the page gets re-used.
 	 */
