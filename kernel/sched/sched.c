@@ -26,16 +26,28 @@ void sched_init(void)
 void sched_yield(void)
 {
 	/* LAB 5: your code here. */
-	if (list_is_empty(&runq)) {
-		if (cur_task && (cur_task->task_status != TASK_NOT_RUNNABLE && cur_task->task_status != TASK_DYING)) {
-			task_run(cur_task);
-		} else {
-			sched_halt();
-		}
-	}
+    struct task *next_task = NULL;
 
-	struct task *next_task = container_of(list_pop_tail(&runq), struct task, task_node);
-	task_run(next_task);
+    if (cur_task && cur_task->task_status == TASK_RUNNING) {
+        cur_task->task_status = TASK_RUNNABLE;
+        list_add_tail(&runq, &cur_task->task_node);
+    }
+
+    if (!list_is_empty(&runq)) {
+        next_task = container_of(list_pop_tail(&runq), struct task, task_node);
+    }
+
+    if (next_task && next_task->task_status == TASK_RUNNABLE) {
+        next_task->task_status = TASK_RUNNING;
+        task_run(next_task);
+    }
+
+    if (cur_task && cur_task->task_status == TASK_RUNNING) {
+        task_run(cur_task); 
+    }
+
+    cprintf("No runnable tasks in the system!\n");
+    sched_halt();
 }
 
 /* For now jump into the kernel monitor. */

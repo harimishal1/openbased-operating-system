@@ -23,10 +23,7 @@ pid_t sys_wait(int *rstatus)
         child = container_of(node, struct task, task_child);
 
         if (rstatus) {
-            //*rstatus = child->task_exit_status;
-            cprintf("DEBUG: Child PID %u exit status is %d\n", child->task_pid, child->task_exit_status);
             *rstatus = child->task_exit_status;
-            cprintf("DEBUG: *rstatus set to %d (0x%x)\n", *rstatus, *rstatus);
         }
         list_del(&child->task_child);
         task_destroy(child);
@@ -34,7 +31,6 @@ pid_t sys_wait(int *rstatus)
     }
 
     cur_task->task_wait = NULL;
-    cur_task->task_wait_exit_status = rstatus;
     cur_task->task_status = TASK_NOT_RUNNABLE;
     sched_yield();
     return sys_wait(rstatus);
@@ -58,10 +54,7 @@ pid_t sys_waitpid(pid_t pid, int *rstatus, int opts)
         child = container_of(node, struct task, task_child);
         if (child->task_pid == pid) {
             if (rstatus) {
-                cprintf("DEBUG: Child PID %u exit status is %d\n", child->task_pid, child->task_exit_status);
                 *rstatus = child->task_exit_status;
-                cprintf("DEBUG: *rstatus set to %d (0x%x)\n", *rstatus, *rstatus);
-                //*rstatus = child->task_exit_status;
             }
             list_del(&child->task_child);
             task_destroy(child);
@@ -79,8 +72,8 @@ pid_t sys_waitpid(pid_t pid, int *rstatus, int opts)
     }
 
     cur_task->task_wait = child;
-    cur_task->task_wait_exit_status = rstatus;
     cur_task->task_status = TASK_NOT_RUNNABLE;
+    cprintf("[PID %5u] Reaping task with PID %d\n", cur_task->task_pid, child->task_pid);
     sched_yield();
     return sys_waitpid(pid, rstatus, opts);
 }

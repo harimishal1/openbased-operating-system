@@ -73,6 +73,7 @@ static int sys_kill(pid_t pid)
 	}
 
 	task->task_status = TASK_DYING;
+	cprintf("[PID %5u] Marking task %d as DYING\n", cur_task->task_pid, task->task_pid);
 
 	cprintf("[PID %5u] Exiting gracefully\n", task->task_pid);
 	task_destroy(task);
