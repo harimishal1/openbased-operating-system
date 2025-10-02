@@ -38,6 +38,8 @@ struct task *task_clone(struct task *task)
 
 	rb_init(&child_task->task_rb);
 	list_init(&child_task->task_mmap);
+	list_init(&child_task->task_children);
+	list_init(&child_task->task_zombies);
 
 	// loop over all vmas in parent task
 	struct list *node;
