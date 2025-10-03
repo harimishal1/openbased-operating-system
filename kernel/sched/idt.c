@@ -145,8 +145,8 @@ void idt_init(void)
 	set_idt_entry(&entries[INT_DIVIDE], (void *)isr0, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE); //
 	set_idt_entry(&entries[INT_DEBUG], (void *)isr1, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_NMI], (void *)isr2, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
-	set_idt_entry(&entries[INT_BREAK], (void *)isr3, IDT_TRAP_GATE32 | IDT_PRESENT | IDT_PRIVL(3), GDT_KCODE);
-	set_idt_entry(&entries[INT_OVERFLOW], (void *)isr4, IDT_TRAP_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
+	set_idt_entry(&entries[INT_BREAK], (void *)isr3, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(3), GDT_KCODE);
+	set_idt_entry(&entries[INT_OVERFLOW], (void *)isr4, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_BOUND], (void *)isr5, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_INVALID_OP], (void *)isr6, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_DEVICE], (void *)isr7, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
@@ -161,7 +161,7 @@ void idt_init(void)
 	set_idt_entry(&entries[INT_MCE], (void *)isr18, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_SIMD], (void *)isr19, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_SECURITY], (void *)isr30, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
-	set_idt_entry(&entries[INT_SYSCALL], (void *)isr128, IDT_TRAP_GATE32 | IDT_PRESENT | IDT_PRIVL(3), GDT_KCODE);
+	set_idt_entry(&entries[INT_SYSCALL], (void *)isr128, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(3), GDT_KCODE);
 	set_idt_entry(&entries[INT_PANIC], (void *)isr127, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(3), GDT_KCODE);
 	set_idt_entry(&entries[IRQ_TIMER], (void *)isr32,IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0),  GDT_KCODE);
 	load_idt(&idtr);

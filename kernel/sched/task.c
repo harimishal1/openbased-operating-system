@@ -172,7 +172,7 @@ struct task *task_alloc(pid_t ppid)
 	task->task_frame.rsp = USTACK_TOP;
 	task->task_frame.cs = GDT_UCODE | 3;
 	//task->task_frame.rflags = FLAGS_IF;
-	//task->task_frame.rflags = FLAGS_IF | 0x2;
+	task->task_frame.rflags = FLAGS_IF | 0x2;
 
 
 	/* You will set task->task_frame.rip later. */
