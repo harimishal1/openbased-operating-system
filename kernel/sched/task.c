@@ -345,7 +345,7 @@ void task_free(struct task *task)
 				list_del(&task->task_node);
 				list_del(&task->task_child);
 				list_add_tail(&waiting->task_zombies, &task->task_node);
-				//sched_yield();
+				sched_yield();
 				return;
 			}
 		}
