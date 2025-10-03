@@ -20,7 +20,7 @@ pid_t sys_wait(int *rstatus)
     }
 
     list_foreach(&cur_task->task_zombies, node) {
-        child = container_of(node, struct task, task_child);
+        child = container_of(node, struct task, task_node);
 
         if (rstatus) {
             *rstatus = child->task_exit_status;
@@ -51,7 +51,7 @@ pid_t sys_waitpid(pid_t pid, int *rstatus, int opts)
     }
 
     list_foreach(&cur_task->task_zombies, node) {
-        child = container_of(node, struct task, task_child);
+        child = container_of(node, struct task, task_node);
         if (child->task_pid == pid) {
             if (rstatus) {
                 *rstatus = child->task_exit_status;
@@ -63,9 +63,9 @@ pid_t sys_waitpid(pid_t pid, int *rstatus, int opts)
     }
 
     child = pid2task(pid, 1);
-    if (!child) {
+   /*  if (!child) {
         return -ECHILD;
-    }
+    } */
 
     if (child == cur_task) {
         return -ECHILD;

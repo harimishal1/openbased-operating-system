@@ -4,6 +4,7 @@
 #include "kernel/mem/buddy.h"
 #include "kernel/mem/init.h"
 #include "kernel/mem/protect.h"
+#include "kernel/sched/sched.h"
 #include "kernel/vma/insert.h"
 #include "kernel/vma/protect.h"
 #include "kernel/vma/remove.h"
@@ -325,7 +326,7 @@ void task_free(struct task *task)
 				}
 				waiting->task_frame.rax = task->task_pid;
 				waiting->task_status = TASK_RUNNABLE;
-				list_add(&runq, &waiting->task_node);
+				list_add_tail(&runq, &waiting->task_node);
 				list_del(&task->task_child);
 			} else {
 				list_del(&task->task_node);
@@ -347,6 +348,7 @@ void task_free(struct task *task)
 	}
 	
 	list_foreach_safe(&task->task_zombies, node, next) {
+		child->task_ppid = 0;
 	    child = container_of(node, struct task, task_child);
 	    list_del(&child->task_node);
 	    task_free(child);
@@ -386,7 +388,10 @@ void task_destroy(struct task *task)
 {
 	task_free(task);
 	/* LAB 5: your code here. */
-	sched_yield();
+	if(task == cur_task){
+		cur_task == NULL;
+		sched_yield();
+	}
 
 	cprintf("Destroyed the only task - nothing more to do!\n");
 	halt_kernel();
