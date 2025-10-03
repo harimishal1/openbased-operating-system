@@ -34,11 +34,11 @@ pid_t sys_wait(int *rstatus)
         task_free(child);
         return return_pid;
     }
-
-    // cur_task->task_wait = NULL;
-    // cur_task->task_status = TASK_NOT_RUNNABLE;
+    
     cur_task->task_wait_exit_status = rstatus;
     sched_yield();
+    cprintf("[PID %5u] Reaping task with PID %d\n", cur_task->task_pid, child->task_pid);
+
     return sys_wait(rstatus);
 }
 

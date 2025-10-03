@@ -353,6 +353,7 @@ void task_free(struct task *task)
 	    list_del(&child->task_node);
 	    task_free(child);
 	}
+	list_del(&task->task_node);
 	
 	
 	/* If we are freeing the current task, switch to the kernel_pml4
