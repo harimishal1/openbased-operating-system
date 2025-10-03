@@ -350,7 +350,7 @@ void task_free(struct task *task)
 	
 	list_foreach_safe(&task->task_zombies, node, next) {
 		child->task_ppid = 0;
-	    child = container_of(node, struct task, task_child);
+	    child = container_of(node, struct task, task_node);
 	    list_del(&child->task_node);
 	    task_free(child);
 	}
