@@ -176,6 +176,10 @@ struct task *task_alloc(pid_t ppid)
 	//task->task_frame.rflags = FLAGS_IF;
 	task->task_frame.rflags = FLAGS_IF | 0x2;
 
+	// LAB 5
+	task->task_time_budget = TIMESLICE;
+	task->last_time_stamp = read_tsc();
+	// cprintf("Initialized time slice fields: budget = %u, tsc = %u\n", task->task_time_budget, task->last_time_stamp);
 
 	/* You will set task->task_frame.rip later. */
 	cprintf("[PID %5u] New task with PID %u\n",

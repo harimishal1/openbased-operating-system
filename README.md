@@ -1,4 +1,22 @@
-## Implemented bonus features
+## Scheduler (lab 5)
+
+Added to the task struct:
+	uint64_t task_time_budget;
+	uint64_t last_time_stamp;
+These are initialized in task_alloc.
+Budget is initialized to 100 million ticks.
+
+In idt.c we keep a bool reschedule, which is used to indicate whether we should switch to a new task.
+At the end of int_handler, right before returning to the current task, we check if this is 
+set, and if so, we call sched_yield.
+
+In irq_handler, we decrease the task_time_budget of the current task using the task_tsc and the current
+tsc (read_tsc()). Then if the budget goes below 0, we set reschedule to true.
+
+In sched_yield, we again calculate the remaining time budget of the current task, and also of the next
+task. If the budget of the next task being run is below 0, we reset it to TIMESLICE.
+
+## Implemented bonus features (lab 1)
 
 ### Invalid Free Detection
 
