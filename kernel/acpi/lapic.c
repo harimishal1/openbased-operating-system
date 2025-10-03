@@ -119,3 +119,14 @@ void lapic_ipi(int vector)
 		;
 }
 
+void lapic_timer_off(void)
+{
+    uint32_t val = lapic_read(LAPIC_TIMER);
+    lapic_write(LAPIC_TIMER, val | LAPIC_MASKED);
+}
+
+void lapic_timer_on(void)
+{
+    uint32_t val = lapic_read(LAPIC_TIMER);
+    lapic_write(LAPIC_TIMER, val & ~LAPIC_MASKED);
+}

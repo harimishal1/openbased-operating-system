@@ -4,11 +4,13 @@
 #include "kernel/mem/buddy.h"
 #include "kernel/mem/init.h"
 #include "kernel/mem/protect.h"
+#include "kernel/sched/idt.h"
 #include "kernel/sched/sched.h"
 #include "kernel/vma/insert.h"
 #include "kernel/vma/protect.h"
 #include "kernel/vma/remove.h"
 #include "kernel/vma/user.h"
+#include "lapic.h"
 #include "list.h"
 #include "stdio.h"
 #include "x86-64/asm.h"
@@ -417,9 +419,8 @@ void task_pop_frame(struct int_frame *frame)
 #ifdef BONUS_SYSCALL
 		case 0x80: sysret64(frame); break;
 #endif
-		default: iret64(frame); break;
+	default: lapic_timer_on(); iret64(frame);break;
 	}
-
 	panic("We should have gone back to userspace!");
 }
 

@@ -53,3 +53,5 @@
 /* Flags for Local Vector Table 3. */
 #define LAPIC_MASKED    0x00010000
 
+void lapic_timer_off(void);
+void lapic_timer_on(void);
