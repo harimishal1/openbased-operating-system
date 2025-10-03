@@ -31,14 +31,14 @@ pid_t sys_wait(int *rstatus)
         pid_t return_pid = child->task_pid;
         list_del(&child->task_node);
         list_del(&child->task_child);
+        cprintf("[PID %5u] Reaping task with PID %d \n",
+            cur_task->task_pid, child->task_pid);
         task_free(child);
         return return_pid;
     }
 
     cur_task->task_wait_exit_status = rstatus;
     sched_yield();
-    //cprintf("[PID %5u] Reaping task with PID %d\n", cur_task->task_pid, child->task_pid);
-
     return sys_wait(rstatus);
 }
 
@@ -74,22 +74,13 @@ pid_t sys_waitpid(pid_t pid, int *rstatus, int opts)
             }
             list_del(&child->task_node);
             list_del(&child->task_child);
+            cprintf("[PID %5u] Reaping task with PID %d\n",
+            cur_task->task_pid, child->task_pid);
             task_free(child);
+            
             return pid;
         }
     }
-
-//     child = pid2task(pid, 1);
-//    /*  if (!child) {
-//         return -ECHILD;
-//     } */
-
-//     if (child == cur_task) {
-//         return -ECHILD;
-//     }
-
-//     cur_task->task_wait = child;
-//     cur_task->task_status = TASK_NOT_RUNNABLE;
     cur_task->task_wait_exit_status = rstatus;
     cprintf("[PID %5u] Reaping task with PID %d\n", cur_task->task_pid, child->task_pid);
     sched_yield();

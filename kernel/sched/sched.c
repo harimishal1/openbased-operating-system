@@ -30,7 +30,7 @@ void sched_yield(void)
 
     if (cur_task && cur_task->task_status == TASK_RUNNING) {
         cur_task->task_status = TASK_RUNNABLE;
-        list_add_tail(&runq, &cur_task->task_node);
+        list_add(&runq, &cur_task->task_node);
     }
 
     if (!list_is_empty(&runq)) {
@@ -40,10 +40,6 @@ void sched_yield(void)
     if (next_task && next_task->task_status == TASK_RUNNABLE) {
         next_task->task_status = TASK_RUNNING;
         task_run(next_task);
-    }
-
-    if (cur_task && cur_task->task_status == TASK_RUNNING) {
-        task_run(cur_task); 
     }
 
     cprintf("No runnable tasks in the system!\n");
