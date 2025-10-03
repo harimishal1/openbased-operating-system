@@ -42,6 +42,7 @@ int do_populate_vma(struct task *task, void *base, size_t size,
         uintptr_t hend  = hbase + HPAGE_SIZE;
         if (hbase >= (uintptr_t)vma->vm_base && hend <= (uintptr_t)vma->vm_end) {
             populate_region(task->task_pml4, (void*)hbase, HPAGE_SIZE, populate_flags | PAGE_HUGE);
+			protect_region(task->task_pml4, base, size, populate_flags);
             return 0;
         }
     }

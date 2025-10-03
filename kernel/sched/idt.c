@@ -64,7 +64,7 @@ static const char *int_names[256] = {
 	[INT_SECURITY] = "Security (#SX)",
 	[INT_SYSCALL] = "System Call(#SC)",
 	[INT_PANIC] = "Panic",
-	[IRQ_TIMER] = "Sched",
+	[IRQ_TIMER] = "HW Timer",
 };
 
 static struct idt_entry entries[256];

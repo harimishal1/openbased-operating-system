@@ -82,8 +82,11 @@ struct vma *add_executable_vma(struct task *task, char *name, void *addr,
 	/* LAB 4: your code here. */
 	struct vma *vma = kmalloc(sizeof(struct vma));
 	if(!vma){
+		kfree(vma);
 		return NULL;
 	}
+	list_init(&vma->vm_mmap); 
+	rb_node_init(&vma->vm_rb);
 	vma->vm_src = (void*) src;
 	vma->vm_len = (size_t) len;
 	vma->vm_name = (char*) name;

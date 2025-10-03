@@ -172,6 +172,7 @@ struct task *task_alloc(pid_t ppid)
 	task->task_frame.rsp = USTACK_TOP;
 	task->task_frame.cs = GDT_UCODE | 3;
 	//task->task_frame.rflags = FLAGS_IF;
+	//task->task_frame.rflags = FLAGS_IF | 0x2;
 
 
 	/* You will set task->task_frame.rip later. */
@@ -318,6 +319,13 @@ void task_free(struct task *task)
 	struct task *waiting;
 	/* LAB 5: your code here. */
 
+	/* If we are freeing the current task, switch to the kernel_pml4
+	 * before freeing the page tables, just in case the page gets re-used.
+	 */
+	if (task == cur_task) {
+		load_pml4((struct page_table *)PADDR(kernel_pml4));
+	}
+
 	if (task->task_ppid != 0) {
 		struct task *waiting = pid2task(task->task_ppid, 0);
 		if (waiting) {
@@ -337,7 +345,7 @@ void task_free(struct task *task)
 				list_del(&task->task_node);
 				list_del(&task->task_child);
 				list_add_tail(&waiting->task_zombies, &task->task_node);
-				sched_yield();
+				//sched_yield();
 				return;
 			}
 		}
@@ -360,13 +368,6 @@ void task_free(struct task *task)
 	}
 	list_del(&task->task_node);
 	
-	
-	/* If we are freeing the current task, switch to the kernel_pml4
-	 * before freeing the page tables, just in case the page gets re-used.
-	 */
-	if (task == cur_task) {
-		load_pml4((struct page_table *)PADDR(kernel_pml4));
-	}
 
 	/* Unmap the task from the PID map. */
 	tasks[task->task_pid] = NULL;
@@ -449,7 +450,7 @@ void task_run(struct task *task)
 	 */
 
 	/* LAB 3: Your code here. */
-	if (task != cur_task) {
+	/* if (task != cur_task) {
 		if (cur_task && cur_task->task_status == TASK_RUNNING) {
 			cur_task->task_status = TASK_RUNNABLE;
 			list_add(&runq, &cur_task->task_node);
@@ -459,7 +460,15 @@ void task_run(struct task *task)
 		cur_task->task_runs++;
 	}
 	load_pml4((struct page_table *)PADDR(task->task_pml4));
-	task_pop_frame(&cur_task->task_frame);
+	task_pop_frame(&cur_task->task_frame); */
+
+	cur_task = task;
+	cur_task->task_status = TASK_RUNNING;
+	cur_task->task_runs++;
+
+	load_pml4((void *)PADDR(task->task_pml4));
+
+	task_pop_frame(&task->task_frame);
 }
 
 /*
