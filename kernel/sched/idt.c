@@ -163,7 +163,7 @@ void idt_init(void)
 	set_idt_entry(&entries[INT_SECURITY], (void *)isr30, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_SYSCALL], (void *)isr128, IDT_TRAP_GATE32 | IDT_PRESENT | IDT_PRIVL(3), GDT_KCODE);
 	set_idt_entry(&entries[INT_PANIC], (void *)isr127, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(3), GDT_KCODE);
-	set_idt_entry(&entries[IRQ_TIMER], (void *)isr32,IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(3),  GDT_KCODE);
+	set_idt_entry(&entries[IRQ_TIMER], (void *)isr32,IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0),  GDT_KCODE);
 	load_idt(&idtr);
 }
 

@@ -12,6 +12,7 @@
 #include "list.h"
 #include "stdio.h"
 #include "x86-64/asm.h"
+#include "x86-64/idt.h"
 #include "x86-64/memory.h"
 #include "x86-64/paging.h"
 #include "x86-64/types.h"
@@ -170,7 +171,8 @@ struct task *task_alloc(pid_t ppid)
 	task->task_frame.ss = GDT_UDATA | 3;
 	task->task_frame.rsp = USTACK_TOP;
 	task->task_frame.cs = GDT_UCODE | 3;
-	//task->task_frame.rflags = 0x202;
+	//task->task_frame.rflags = FLAGS_IF;
+
 
 	/* You will set task->task_frame.rip later. */
 	cprintf("[PID %5u] New task with PID %u\n",
@@ -217,6 +219,7 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 	 */
 
 	/* LAB 3: your code here. */
+	load_pml4((void *) PADDR(task->task_pml4));
 	struct elf *elf_binary = (struct elf *)binary;
 	if (elf_binary->e_magic != ELF_MAGIC) {
 		panic("magic number is wrong");
@@ -263,14 +266,15 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 
 	}
 
-	task->task_frame.rip = elf_binary->e_entry;
-
 	/* Now map one page for the program's initial stack at virtual address
 	 * USTACK_TOP - PAGE_SIZE.
 	 */
 
 	/* LAB 3: your code here. */
+
 	add_anonymous_vma(task,"stack", (void *)(USTACK_TOP - PAGE_SIZE), PAGE_SIZE, PROT_READ | PROT_WRITE);
+	load_pml4((void *) PADDR(kernel_pml4));
+	task->task_frame.rip = elf_binary->e_entry;
 } 
 
 /* Allocates a new task with task_alloc(), loads the named ELF binary using
@@ -391,7 +395,7 @@ void task_destroy(struct task *task)
 	task_free(task);
 	/* LAB 5: your code here. */
 	if(task == cur_task){
-		cur_task == NULL;
+		cur_task = NULL;
 		sched_yield();
 	}
 
@@ -453,9 +457,8 @@ void task_run(struct task *task)
 		cur_task = task;
 		cur_task->task_status = TASK_RUNNING;
 		cur_task->task_runs++;
-		load_pml4((struct page_table *)PADDR(task->task_pml4));
 	}
-
+	load_pml4((struct page_table *)PADDR(task->task_pml4));
 	task_pop_frame(&cur_task->task_frame);
 }
 

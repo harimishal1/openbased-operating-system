@@ -1,4 +1,5 @@
 
+#include "assert.h"
 #include "list.h"
 #include "stdio.h"
 #include <types.h>
@@ -39,6 +40,7 @@ pid_t sys_wait(int *rstatus)
 
     cur_task->task_wait_exit_status = rstatus;
     sched_yield();
+    panic("SHOULDNT BE HERE");
     return sys_wait(rstatus);
 }
 
@@ -84,5 +86,7 @@ pid_t sys_waitpid(pid_t pid, int *rstatus, int opts)
     cur_task->task_wait_exit_status = rstatus;
     cprintf("[PID %5u] Reaping task with PID %d\n", cur_task->task_pid, child->task_pid);
     sched_yield();
+    panic("SHOULDNT BE HERE");
+
     return pid;
 }

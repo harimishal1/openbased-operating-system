@@ -1,5 +1,6 @@
 
 #include "kernel/mem/buddy.h"
+#include "kernel/mem/insert.h"
 #include "kernel/mem/tlb.h"
 #include "kernel/sched/task.h"
 #include "stdio.h"
@@ -26,10 +27,10 @@ static int populate_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		if (!new_page) {
 			return -1;
 		}
-		memcpy(page2kva(new_page), page2kva(page), PAGE_SIZE);
 		page_decref(page);
 		new_page->pp_ref++;
 		*entry = page2pa(new_page) | PAGE_PRESENT | info->flags;
+		memcpy(page2kva(new_page), page2kva(page), PAGE_SIZE);
 		tlb_invalidate(cur_task->task_pml4, (void*)base);
 		return 0;
 	} else if (*entry & PAGE_PRESENT && page->pp_ref == 1) {
@@ -58,10 +59,10 @@ static int populate_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		if (!new_page) {
 			return -1;
 		}
-		memcpy(page2kva(new_page), page2kva(page), HPAGE_SIZE);
+		*entry = page2pa(new_page) | PAGE_PRESENT | PAGE_HUGE | info->flags;
 		page_decref(page);
 		new_page->pp_ref++;
-		*entry = page2pa(new_page) | PAGE_PRESENT | PAGE_HUGE | info->flags;
+		memcpy(page2kva(new_page), page2kva(page), HPAGE_SIZE);
 		tlb_invalidate(cur_task->task_pml4, (void*)base);
 	} else if (*entry & PAGE_PRESENT && page->pp_ref == 1) {
 		return 0;
