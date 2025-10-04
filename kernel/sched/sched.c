@@ -2,6 +2,7 @@
 #include "kernel/sched/task.h"
 #include "task.h"
 #include <types.h>
+#include <cpu.h>
 #include <list.h>
 #include <stdio.h>
 #include <x86-64/asm.h>
@@ -14,6 +15,14 @@
 struct list runq;
 
 
+#ifndef USE_BIG_KERNEL_LOCK
+struct spinlock runq_lock = {
+#ifdef DEBUG_SPINLOCK
+	.name = "runq_lock",
+#endif
+};
+#endif
+
 extern size_t nuser_tasks;
 
 void sched_init(void)
@@ -21,6 +30,10 @@ void sched_init(void)
 	list_init(&runq);
 }
 
+void sched_init_mp(void)
+{
+	/* LAB 6: your code here. */
+}
 
 /* Runs the next runnable task. */
 void sched_yield(void)

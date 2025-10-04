@@ -1,6 +1,7 @@
 
 #include "x86-64/paging.h"
 #include <types.h>
+#include <cpu.h>
 #include <paging.h>
 
 #include <kernel/mem.h>

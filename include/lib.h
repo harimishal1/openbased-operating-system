@@ -63,6 +63,7 @@ pid_t getpid(void);
 int kill(pid_t);
 void exit(int);
 
+unsigned getcpuid(void);
 
 int mquery(struct vma_info *info, void *addr);
 void *mmap(void *addr, size_t len, int prot, int flags, int fd,

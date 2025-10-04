@@ -5,12 +5,14 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <cpu.h>
 
 #include <kernel/acpi.h>
 #include <kernel/console.h>
 #include <kernel/fwcfg.h>
 #include <kernel/mem.h>
 #include <kernel/monitor.h>
+#include <kernel/mp.h>
 #include <kernel/pic.h>
 #include <kernel/sched.h>
 #include <kernel/test/probe.h>

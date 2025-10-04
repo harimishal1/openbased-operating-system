@@ -1,4 +1,5 @@
 
+#include <cpu.h>
 #include "kernel/mem/insert.h"
 #include "kernel/mem/ptbl.h"
 #include "kernel/mem/tlb.h"

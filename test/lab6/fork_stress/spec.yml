@@ -1,0 +1,26 @@
+name: Forking - Stress
+description: This asserts that a large number of processes can be spawned and
+  terminated without breaking the system, while being distributed across cores.
+
+qemu: -m 2G
+
+---
+
+name: (2 cores)
+qemu: -smp 2 -m 2G
+
+regexlines:
+  - Running on CPU 0
+  - Running on CPU 1
+
+---
+
+name: (4 cores)
+qemu: -smp 4 -m 2G
+timeout: 120
+
+regexlines:
+  - Running on CPU 0
+  - Running on CPU 1
+  - Running on CPU 2
+  - Running on CPU 3

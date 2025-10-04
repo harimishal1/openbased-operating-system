@@ -170,6 +170,10 @@ void idt_init(void)
 	load_idt(&idtr);
 }
 
+void idt_init_mp(void)
+{
+	/* LAB 6: your code here. */
+}
 void gpf_handler(struct int_frame *frame)
 {
 	void *fault_va = (void *)read_cr2();

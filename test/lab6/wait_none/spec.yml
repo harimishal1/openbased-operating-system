@@ -1,0 +1,11 @@
+name: Wait - No Children
+description: Call wait while there are no children to wait for
+
+regexlines:
+  - '.PID     1. Exiting gracefully'
+  - '.PID     1. Freed task with PID 1'
+
+---
+
+name: (2 cores)
+qemu: -smp 2

@@ -1,9 +1,10 @@
 
 #include <types.h>
+#include <cpu.h>
+
+#include <kernel/acpi.h>
 #include <kernel/mem.h>
 
-size_t nslabs = 32;
-struct slab slabs[32];
 /* Sets up slab allocators for every multiple of SLAB_ALIGN bytes starting from
  * SLAB_ALIGN.
  */
@@ -21,6 +22,11 @@ int kmem_init(void)
 	return 0;
 }
 
+int kmem_init_mp(void)
+{
+	/* LAB 6: your code here. */
+	return 0;
+}
 
 /* Allocates a chunk of memory of size bytes.
  *

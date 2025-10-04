@@ -16,5 +16,6 @@ enum {
 	SYS_wait,
 	SYS_waitpid,
 	SYS_fork,
+	SYS_getcpuid,
 	NSYSCALLS,
 };

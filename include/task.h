@@ -4,6 +4,7 @@
 #include <types.h>
 #include <list.h>
 #include <rbtree.h>
+#include <spinlock.h>
 
 #include <x86-64/idt.h>
 #include <x86-64/memory.h>
@@ -78,4 +79,9 @@ struct task {
 
 	int64_t task_time_budget;
 	uint64_t last_time_stamp;
+
+#ifndef USE_BIG_KERNEL_LOCK
+	/* Per-task lock */
+	struct spinlock task_lock;
+#endif
 };

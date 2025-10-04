@@ -8,10 +8,12 @@
 #include <string.h>
 #include <assert.h>
 #include <lib.h>
+#include <cpu.h>
 
 #include <x86-64/asm.h>
 #include <x86-64/gdt.h>
 
+#include <kernel/acpi.h>
 #include <kernel/console.h>
 #include <kernel/mem.h>
 #include <kernel/sched.h>
@@ -29,6 +31,10 @@ void syscall_init(void)
 	write_msr(MSR_EFER, read_msr(MSR_EFER) | MSR_EFER_SCE);
 	write_msr(MSR_KERNEL_GS_BASE, (uint64_t)&this_cpu);
 	#endif */
+}
+void syscall_init_mp(void)
+{
+	/* LAB 6: your code here - of course only if you implemented the SYSCALL bonus. */
 }
 
 /*
@@ -103,6 +109,11 @@ static int sys_exit(int rcode)
 }
 
 
+static int sys_getcpuid(void)
+{
+	/* LAB 6: your code here. */
+	return 0;
+}
 
 /* Dispatches to the correct kernel function, passing the arguments. */
 int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,

@@ -16,6 +16,8 @@
 #include <x86-64/gdt.h>
 #include <x86-64/memory.h>
 
+#include <kernel/mem/slab.h>
+#include <kernel/acpi.h>
 
 /* Values of status in struct cpuinfo */
 enum {
@@ -24,6 +26,10 @@ enum {
 	CPU_HALTED,
 };
 
+struct kmem_cache {
+	struct slab _slabs[32];
+	size_t _nslabs;
+};
 
 /* Per-CPU state */
 struct cpuinfo {
@@ -39,10 +45,23 @@ struct cpuinfo {
 	/* Used by x86 to find the stack for the interrupt. */
 	struct tss cpu_tss;
 
+	/* Per-CPU slab allocator */
+	struct kmem_cache kmem;
+
+	/* Per-CPU spinlock rank tracker */
+	uint64_t spinlock_rank;
+
+	/* Per-CPU run queue */
+	struct list runq, nextq;
+	size_t runq_len;
 };
 
-extern struct cpuinfo *this_cpu;
+#define NCPUS 64
+
+extern struct cpuinfo cpus[NCPUS];
 extern struct cpuinfo *boot_cpu;
 
+#define this_cpu (cpus + lapic_cpunum())
+extern size_t ncpus;
 
 #endif /* !defined(__ASSEMBLER__) */
