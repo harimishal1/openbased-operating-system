@@ -1,8 +1,11 @@
 #include "kernel/mem/init.h"
+#include "cpu.h"
 #include "kernel/mem/buddy.h"
 #include "kernel/mem/dump.h"
+#include "kernel/mem/insert.h"
 #include "kernel/mem/map.h"
 #include "stdio.h"
+#include "x86-64/memory.h"
 #include "x86-64/paging.h"
 #include "x86-64/types.h"
 #include <types.h>
@@ -183,6 +186,35 @@ void mem_init_mp(void)
 	 * page.
 	 */
 	/* LAB 6: your code here. */
+    for (int i = 0; i < ncpus; i++) {
+
+		if (&cpus[i] == boot_cpu) {
+            // hari - this skips boot cpu but idk if it's right lmao
+            cpus[i].cpu_tss.rsp[0] = KSTACK_TOP;
+            cpus[i].cpu_tss.iomap_base = sizeof(struct tss);
+            continue;
+        }
+		uintptr_t stack_top = KSTACK_TOP - i * (KSTACK_SIZE + KSTACK_GAP);
+        uintptr_t stack_bottom = stack_top - KSTACK_SIZE;
+        uintptr_t guard_bottom = stack_bottom - KSTACK_GAP;
+
+        for (size_t off = 0; off < KSTACK_SIZE; off += PAGE_SIZE) {
+            struct page_info *page = page_alloc(ALLOC_ZERO);
+            
+			if (!page) {
+                panic("mem_init_mp: out of memory allocating CPU %d stack", i);
+            }
+			page_insert(kernel_pml4, page, (void *)(stack_bottom + off), PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+        }
+
+		cpus[i].cpu_tss.rsp[0] = stack_top;
+		cpus[i].cpu_tss.iomap_base = sizeof(struct tss);
+
+        cprintf("[SMP] CPU %d kernel stack: [%p - %p), guard: [%p - %p)\n",
+                i,
+                (void *)stack_bottom, (void *)stack_top,
+                (void *)guard_bottom, (void *)stack_bottom);
+    }
 }
 
 /*
@@ -260,6 +292,15 @@ void page_init(struct boot_info *boot_info)
             if (pa >= BOOT_MAP_LIM) {
                 break;	
             }
+			/* if (pa == MPENTRY_PADDR) {
+				_Static_assert((MPENTRY_PADDR % PAGE_SIZE) == 0, "MPENTRY_PADDR must be page-aligned");
+				page = pa2page(pa);
+				page->pp_avail = 1;
+				page->pp_ref   = 1;
+				page->pp_free  = 0;
+				continue;
+    		} */
+
 			if (pa == 0 ||
 				(pa >= ROUNDDOWN(KERNEL_LMA, PAGE_SIZE) && pa < end) ||
 				((pa >= ROUNDDOWN(PADDR(boot_info), PAGE_SIZE) && 

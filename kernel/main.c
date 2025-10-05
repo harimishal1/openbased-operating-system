@@ -1,3 +1,4 @@
+#include "kernel/mem/init.h"
 #include <types.h>
 #include <assert.h>
 #include <boot.h>
@@ -89,7 +90,8 @@ void kmain(struct boot_info *boot_info)
 	lapic_init();
 	hpet_init(rsdp);
 
-
+	mem_init_mp();
+	boot_cpus();
 
 	/* Set up the tasks. */
 	task_init();

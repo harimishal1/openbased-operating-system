@@ -25,6 +25,16 @@ int kmem_init(void)
 int kmem_init_mp(void)
 {
 	/* LAB 6: your code here. */
+	struct kmem_cache *kc = &this_cpu->kmem;
+
+    assert(nslabs <= sizeof(kc->_slabs) / sizeof(kc->_slabs[0]));
+    kc->_nslabs = nslabs;
+
+    for (size_t i = 0; i < kc->_nslabs; ++i) {
+        size_t obj_size = (i + 1) * SLAB_ALIGN;
+        slab_setup(&kc->_slabs[i], obj_size);
+    }
+
 	return 0;
 }
 

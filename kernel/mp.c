@@ -1,3 +1,8 @@
+#include "kernel/acpi/hpet.h"
+#include "kernel/mem/init.h"
+#include "kernel/mem/kmem.h"
+#include "kernel/sched/gdt.h"
+#include "kernel/sched/sched.h"
 #include <x86-64/asm.h>
 
 #include <cpu.h>
@@ -56,19 +61,27 @@ void mp_main(void)
 
 	/* LAB 6: your code here. */
 	/* Initialize the local APIC. */
+	lapic_init();
 
 	/* Set up segmentation, interrupts, system call support. */
+	gdt_init_mp();
+    idt_init_mp();
+
+	mem_init_mp();
 
 	/* Set up the per-CPU slab allocator. */
+	kmem_init_mp();
 
 	/* Set up the per-CPU scheduler. */
+	sched_init_mp();
+
 	/* Notify the main CPU that we started up. */
 	xchg(&this_cpu->cpu_status, CPU_STARTED);
 
 	/* Schedule tasks. */
 	/* LAB 6: remove this code when you are ready */
-	asm volatile(
+	/* asm volatile(
 		"cli\n"
-		"hlt\n");
+		"hlt\n"); */
 	sched_yield();
 }
