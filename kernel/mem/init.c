@@ -186,15 +186,17 @@ void mem_init_mp(void)
 	 * page.
 	 */
 	/* LAB 6: your code here. */
-    for (int i = 0; i < ncpus; i++) {
+	struct cpuinfo *cpu;
+    for (cpu = cpus; cpu < cpus + ncpus; ++cpu) {
+		int idx = (int)(cpu - cpus);
 
-		if (&cpus[i] == boot_cpu) {
+		if (cpu == boot_cpu) {
             // hari - this skips boot cpu but idk if it's right lmao
-            cpus[i].cpu_tss.rsp[0] = KSTACK_TOP;
-            cpus[i].cpu_tss.iomap_base = sizeof(struct tss);
+            cpu->cpu_tss.rsp[0] = KSTACK_TOP;
+            cpu->cpu_tss.iomap_base = sizeof(struct tss);
             continue;
         }
-		uintptr_t stack_top = KSTACK_TOP - i * (KSTACK_SIZE + KSTACK_GAP);
+		uintptr_t stack_top = KSTACK_TOP - idx * (KSTACK_SIZE + KSTACK_GAP);
         uintptr_t stack_bottom = stack_top - KSTACK_SIZE;
         uintptr_t guard_bottom = stack_bottom - KSTACK_GAP;
 
@@ -202,16 +204,17 @@ void mem_init_mp(void)
             struct page_info *page = page_alloc(ALLOC_ZERO);
             
 			if (!page) {
-                panic("mem_init_mp: out of memory allocating CPU %d stack", i);
+                panic("mem_init_mp: out of memory allocating CPU %d stack", idx);
             }
+
 			page_insert(kernel_pml4, page, (void *)(stack_bottom + off), PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
         }
 
-		cpus[i].cpu_tss.rsp[0] = stack_top;
-		cpus[i].cpu_tss.iomap_base = sizeof(struct tss);
+		cpu->cpu_tss.rsp[0] = stack_top;
+		cpus->cpu_tss.iomap_base = sizeof(struct tss);
 
         cprintf("[SMP] CPU %d kernel stack: [%p - %p), guard: [%p - %p)\n",
-                i,
+                idx,
                 (void *)stack_bottom, (void *)stack_top,
                 (void *)guard_bottom, (void *)stack_bottom);
     }
@@ -292,14 +295,14 @@ void page_init(struct boot_info *boot_info)
             if (pa >= BOOT_MAP_LIM) {
                 break;	
             }
-			/* if (pa == MPENTRY_PADDR) {
+			if (pa == MPENTRY_PADDR) {
 				_Static_assert((MPENTRY_PADDR % PAGE_SIZE) == 0, "MPENTRY_PADDR must be page-aligned");
 				page = pa2page(pa);
 				page->pp_avail = 1;
 				page->pp_ref   = 1;
 				page->pp_free  = 0;
 				continue;
-    		} */
+    		}
 
 			if (pa == 0 ||
 				(pa >= ROUNDDOWN(KERNEL_LMA, PAGE_SIZE) && pa < end) ||
