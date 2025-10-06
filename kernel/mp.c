@@ -3,6 +3,7 @@
 #include "kernel/mem/kmem.h"
 #include "kernel/sched/gdt.h"
 #include "kernel/sched/sched.h"
+#include "kernel/sched/syscall.h"
 #include "stdio.h"
 #include <x86-64/asm.h>
 

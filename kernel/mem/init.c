@@ -192,8 +192,7 @@ void mem_init_mp(void)
 
 		if (cpu == boot_cpu) {
             // hari - this skips boot cpu but idk if it's right lmao
-            cpu->cpu_tss.rsp[0] = KSTACK_TOP;
-            cpu->cpu_tss.iomap_base = sizeof(struct tss);
+           // cpu->cpu_tss.rsp[0] = KSTACK_TOP;
             continue;
         }
 		uintptr_t stack_top = KSTACK_TOP - idx * (KSTACK_SIZE + KSTACK_GAP);
@@ -207,12 +206,10 @@ void mem_init_mp(void)
                 panic("mem_init_mp: out of memory allocating CPU %d stack", idx);
             }
 
-			page_insert(kernel_pml4, page, (void *)(stack_bottom + off), PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+			page_insert(kernel_pml4, page, (void *)(stack_bottom + off), PAGE_WRITE | PAGE_NO_EXEC);
         }
 
 		cpu->cpu_tss.rsp[0] = stack_top;
-		cpus->cpu_tss.iomap_base = sizeof(struct tss);
-
         cprintf("[SMP] CPU %d kernel stack: [%p - %p), guard: [%p - %p)\n",
                 idx,
                 (void *)stack_bottom, (void *)stack_top,

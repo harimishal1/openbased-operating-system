@@ -25,7 +25,7 @@ void gdt_init(void)
 	 */
 	/* LAB 6: your code here. */
 	this_cpu->cpu_tss.rsp[0] = KSTACK_TOP;
-
+	//this_cpu->cpu_tss.iomap_base = sizeof(struct tss);
 	set_tss_entry((struct tss_entry *)(gdt_entries + (GDT_TSS0 >> 3)),
 	    &this_cpu->cpu_tss);
 	load_gdt(&gdtr, GDT_KCODE, GDT_KDATA);
@@ -35,5 +35,10 @@ void gdt_init(void)
 void gdt_init_mp(void)
 {
 	/* LAB 6: your code here. */
+	//this_cpu->cpu_tss.iomap_base = sizeof(struct tss);
+	set_tss_entry((struct tss_entry *)(gdt_entries + (GDT_TSS0 >> 3)),
+	    &this_cpu->cpu_tss);
+	load_gdt(&gdtr, GDT_KCODE, GDT_KDATA);
+	load_task_sel(GDT_TSS0);	
 }
 

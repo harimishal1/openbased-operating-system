@@ -1,4 +1,5 @@
 
+#include "stdio.h"
 #include <types.h>
 #include <cpu.h>
 
@@ -25,7 +26,11 @@ int kmem_init(void)
 int kmem_init_mp(void)
 {
 	/* LAB 6: your code here. */
+	
 	struct kmem_cache *kc = &this_cpu->kmem;
+	if (kc->_nslabs == nslabs && kc->_nslabs != 0)
+		cprintf("maybe kmem_init_mp issue");
+        return 0;
 
     assert(nslabs <= sizeof(kc->_slabs) / sizeof(kc->_slabs[0]));
     kc->_nslabs = nslabs;
