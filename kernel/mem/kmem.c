@@ -26,19 +26,30 @@ int kmem_init(void)
 int kmem_init_mp(void)
 {
 	/* LAB 6: your code here. */
-	
 	struct kmem_cache *kc = &this_cpu->kmem;
-	if (kc->_nslabs == nslabs && kc->_nslabs != 0)
-		cprintf("maybe kmem_init_mp issue");
-        return 0;
+	// if (kc->_nslabs == nslabs && kc->_nslabs != 0)
+	// 	cprintf("maybe kmem_init_mp issue");
+    //     return 0;
 
     assert(nslabs <= sizeof(kc->_slabs) / sizeof(kc->_slabs[0]));
-    kc->_nslabs = nslabs;
 
-    for (size_t i = 0; i < kc->_nslabs; ++i) {
-        size_t obj_size = (i + 1) * SLAB_ALIGN;
-        slab_setup(&kc->_slabs[i], obj_size);
-    }
+	struct cpuinfo *cpu;
+	struct kmem_cache *curr_kc;
+	for (cpu = cpus; cpu < cpus + ncpus; ++cpu) {
+		curr_kc = &cpu->kmem;
+		curr_kc->_nslabs = SLAB_ALIGN;
+		for (size_t i = 0; i < curr_kc->_nslabs; ++i) {
+        	size_t obj_size = (i + 1) * SLAB_ALIGN;
+        	slab_setup(&curr_kc->_slabs[i], obj_size);
+    	}
+	}
+
+    // kc->_nslabs = nslabs;
+
+	// for (size_t i = 0; i < kc->_nslabs; ++i) {
+    // 	size_t obj_size = (i + 1) * SLAB_ALIGN;
+    // 	slab_setup(&kc->_slabs[i], obj_size);
+    // }
 
 	return 0;
 }
@@ -61,6 +72,7 @@ void *kmalloc(size_t size)
 	size = ROUNDUP(size, SLAB_ALIGN);
 	index = (size / SLAB_ALIGN) - 1;
 
+	cprintf("DEBUG kmalloc: index = %d, nslabs = %d\n", index, nslabs);
 	if (index >= nslabs) {
 		return NULL;
 	}
