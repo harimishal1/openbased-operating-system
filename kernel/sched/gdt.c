@@ -6,7 +6,7 @@
 #include <kernel/acpi.h>
 #include <kernel/sched/gdt.h>
 
-struct gdt_entry gdt_entries[5 + 2] = {
+struct gdt_entry gdt_entries[5 + 2 * NCPUS] = {
 	[GDT_KCODE >> 3] = { .flags = GDT_KCODE_FLAGS | GDT_LONG_MODE },
 	[GDT_KDATA >> 3] = { .flags = GDT_KDATA_FLAGS },
 	[GDT_UCODE >> 3] = { .flags = GDT_UCODE_FLAGS | GDT_LONG_MODE },
@@ -24,6 +24,15 @@ void gdt_init(void)
 	 * Load the GDT and the task selector.
 	 */
 	/* LAB 6: your code here. */
+	for (size_t i = 0; i < ncpus; ++i) {
+		struct cpuinfo *cpu = &cpus[i];
+        if (cpu == boot_cpu) {
+            cpu->cpu_tss.rsp[0] = KSTACK_TOP;
+
+        } else {
+			cpu->cpu_tss.rsp[0] = KSTACK_TOP - (i + 1) * (KSTACK_SIZE + PAGE_SIZE);
+		}
+	}
 	this_cpu->cpu_tss.rsp[0] = KSTACK_TOP;
 	set_tss_entry((struct tss_entry *)(gdt_entries + (GDT_TSS0 >> 3)),
 	    &this_cpu->cpu_tss);
@@ -35,11 +44,15 @@ void gdt_init_mp(void)
 {
 	/* LAB 6: your code here. */
 	
-	//hari - not correct! change this to account for different cpus
-	
-		set_tss_entry((struct tss_entry *)(gdt_entries + (GDT_TSS0 >> 3)),
-			&this_cpu->cpu_tss);
-		load_gdt(&gdtr, GDT_KCODE, GDT_KDATA);
-		load_task_sel(GDT_TSS0);	
-	}
+	size_t i = this_cpu - cpus;
+
+    this_cpu->cpu_tss.rsp[0] = KSTACK_TOP - (i + 1) * (KSTACK_SIZE + PAGE_SIZE);
+
+    set_tss_entry((struct tss_entry *)(gdt_entries + (GDT_TSS0 >> 3) + (i * 2)),
+                  &this_cpu->cpu_tss);
+
+	load_gdt(&gdtr, GDT_KCODE, GDT_KDATA);
+	load_task_sel(GDT_TSS0 + (i * 16));	
+
+}
 

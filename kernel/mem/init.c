@@ -80,6 +80,7 @@ int pml4_setup(struct boot_info *boot_info)
 	boot_map_region(kernel_pml4, (void *)(KERNEL_VMA + IO_PHYS_MEM), EXT_PHYS_MEM - IO_PHYS_MEM,
 	IO_PHYS_MEM, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
 	
+	
 	/* Migrate the struct page_info structs to the newly mapped area using
 	* buddy_migrate().
 	*/
@@ -192,7 +193,6 @@ void mem_init_mp(void)
 
 		if (cpu == boot_cpu) {
             // hari - this skips boot cpu but idk if it's right lmao
-           // cpu->cpu_tss.rsp[0] = KSTACK_TOP;
             continue;
         }
 		uintptr_t stack_top = KSTACK_TOP - idx * (KSTACK_SIZE + KSTACK_GAP);
@@ -209,7 +209,7 @@ void mem_init_mp(void)
 			page_insert(kernel_pml4, page, (void *)(stack_bottom + off), PAGE_WRITE | PAGE_NO_EXEC);
         }
 
-		cpu->cpu_tss.rsp[0] = stack_top; // hari - could set this in gdt as well, not sure if there's a real difference
+		//cpu->cpu_tss.rsp[0] = stack_top; // now we set this in gdt 
         cprintf("[SMP] CPU %d kernel stack: [%p - %p), guard: [%p - %p)\n",
                 idx,
                 (void *)stack_bottom, (void *)stack_top,

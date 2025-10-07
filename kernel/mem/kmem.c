@@ -51,7 +51,7 @@ void *kmalloc(size_t size)
 	size = ROUNDUP(size, SLAB_ALIGN);
 	index = (size / SLAB_ALIGN) - 1;
 
-	cprintf("DEBUG kmalloc: index = %d, nslabs = %d\n", index, nslabs);
+	//cprintf("DEBUG kmalloc: index = %d, nslabs = %d\n", index, nslabs);
 	if (index >= nslabs) {
 		return NULL;
 	}

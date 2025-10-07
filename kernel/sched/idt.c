@@ -271,6 +271,9 @@ void int_handler(struct int_frame *frame)
 	/* The task may have set DF and some versions of GCC rely on DF being
 	 * clear. */
 	lapic_timer_off();
+	/* if ((frame->cs & 3) == 3) {
+		big_spin_lock(&kernel_lock);
+	} */
 	asm volatile("cld" ::: "cc");
 	/* Check if interrupts are disabled.
 	 * If this assertion fails, DO NOT be tempted to fix it by inserting a

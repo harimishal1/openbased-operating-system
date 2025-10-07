@@ -12,6 +12,7 @@
 #include "kernel/vma/user.h"
 #include "lapic.h"
 #include "list.h"
+#include "spinlock.h"
 #include "stdio.h"
 #include "x86-64/asm.h"
 #include "x86-64/idt.h"
@@ -173,7 +174,7 @@ struct task *task_alloc(pid_t ppid)
 	task->task_frame.ss = GDT_UDATA | 3;
 	task->task_frame.rsp = USTACK_TOP;
 	task->task_frame.cs = GDT_UCODE | 3;
-	//task->task_frame.rflags = FLAGS_IF | 0x2;
+	task->task_frame.rflags = FLAGS_IF | 0x2;
 
 	// LAB 5
 	task->task_time_budget = TIMESLICE;
@@ -422,7 +423,12 @@ void task_pop_frame(struct int_frame *frame)
 #ifdef BONUS_SYSCALL
 		case 0x80: sysret64(frame); break;
 #endif
-	default: lapic_timer_on(); iret64(frame);break;
+	default: 
+		lapic_timer_on(); 
+		//big_spin_unlock(&kernel_lock);
+		iret64(frame);
+		
+		break;
 	}
 	panic("We should have gone back to userspace!");
 }
