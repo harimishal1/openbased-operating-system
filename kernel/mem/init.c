@@ -209,7 +209,7 @@ void mem_init_mp(void)
 			page_insert(kernel_pml4, page, (void *)(stack_bottom + off), PAGE_WRITE | PAGE_NO_EXEC);
         }
 
-		cpu->cpu_tss.rsp[0] = stack_top;
+		cpu->cpu_tss.rsp[0] = stack_top; // hari - could set this in gdt as well, not sure if there's a real difference
         cprintf("[SMP] CPU %d kernel stack: [%p - %p), guard: [%p - %p)\n",
                 idx,
                 (void *)stack_bottom, (void *)stack_top,

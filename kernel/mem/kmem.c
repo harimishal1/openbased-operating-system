@@ -1,4 +1,5 @@
 
+#include "kernel/mem/kmem.h"
 #include "stdio.h"
 #include <types.h>
 #include <cpu.h>
@@ -14,6 +15,7 @@ int kmem_init(void)
 	struct slab *slab;
 	size_t obj_size;
 	size_t i;
+	nslabs = 32;
 	for (i = 0; i < nslabs; ++i) {
 		slab = slabs + i;
 		obj_size = (i + 1) * SLAB_ALIGN;
@@ -26,31 +28,8 @@ int kmem_init(void)
 int kmem_init_mp(void)
 {
 	/* LAB 6: your code here. */
-	struct kmem_cache *kc = &this_cpu->kmem;
-	// if (kc->_nslabs == nslabs && kc->_nslabs != 0)
-	// 	cprintf("maybe kmem_init_mp issue");
-    //     return 0;
 
-    assert(nslabs <= sizeof(kc->_slabs) / sizeof(kc->_slabs[0]));
-
-	struct cpuinfo *cpu;
-	struct kmem_cache *curr_kc;
-	for (cpu = cpus; cpu < cpus + ncpus; ++cpu) {
-		curr_kc = &cpu->kmem;
-		curr_kc->_nslabs = SLAB_ALIGN;
-		for (size_t i = 0; i < curr_kc->_nslabs; ++i) {
-        	size_t obj_size = (i + 1) * SLAB_ALIGN;
-        	slab_setup(&curr_kc->_slabs[i], obj_size);
-    	}
-	}
-
-    // kc->_nslabs = nslabs;
-
-	// for (size_t i = 0; i < kc->_nslabs; ++i) {
-    // 	size_t obj_size = (i + 1) * SLAB_ALIGN;
-    // 	slab_setup(&kc->_slabs[i], obj_size);
-    // }
-
+	kmem_init();
 	return 0;
 }
 

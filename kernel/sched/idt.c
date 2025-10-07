@@ -20,10 +20,6 @@
 #include <lib.h>
 #include <paging.h>
 
-#ifdef USE_BIG_KERNEL_LOCK
-	extern struct spinlock kernel_lock;
-#endif
-
 extern int task_page_fault_handler(struct task *task, void *va, int flags);
 
 /* LAB 3: your code here. */
@@ -218,7 +214,7 @@ void irq_handler(struct int_frame *frame)
         reschedule = true;
     }
     lapic_eoi();
-	//sched_yield();
+	sched_yield();
 }
 
 void int_dispatch(struct int_frame *frame)
@@ -281,16 +277,6 @@ void int_handler(struct int_frame *frame)
 	 * "cli" in the interrupt path.
 	 */
 	assert(!(read_rflags() & FLAGS_IF));
-#ifdef USE_BIG_KERNEL_LOCK
-	bool from_user = ((frame->cs & 3) == 3);
-	if (from_user) {
-		//lock_kernel();
-		big_spin_lock(&kernel_lock);
-	}
-#else
-    bool from_user = ((frame->cs & 3) == 3);
-#endif
-
 	/* cprintf("Incoming INT frame at %p\n", frame); */
 	if ((frame->cs & 3) == 3) {
 		/* Interrupt from user mode. */
@@ -309,16 +295,11 @@ void int_handler(struct int_frame *frame)
 	int_dispatch(frame);
 
 	// LAB 5
-	if (reschedule && from_user) {
+	if (reschedule) {
     	reschedule = false;
     	sched_yield();
     }
 
-#ifdef USE_BIG_KERNEL_LOCK
-	if (cur_task && ((cur_task->task_frame.cs & 3) == 3)) {
-		big_spin_unlock(&kernel_lock);
-	}
-#endif
 	/* Return to the current task, which should be running. */
 	task_run(cur_task);
 }
