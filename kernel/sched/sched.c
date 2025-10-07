@@ -33,6 +33,7 @@ void sched_init(void)
 void sched_init_mp(void)
 {
 	/* LAB 6: your code here. */
+    cur_task = NULL;
 }
 
 /* Runs the next runnable task. */

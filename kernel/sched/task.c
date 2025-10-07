@@ -30,6 +30,10 @@
 #include <kernel/mem.h>
 #include <kernel/sched.h>
 
+#ifdef USE_BIG_KERNEL_LOCK
+	extern struct spinlock kernel_lock;
+#endif
+
 extern struct list runq;
 extern int check_user_vma_range(uintptr_t *fault_va, struct task *task, void *base, size_t size, int flags);
 
@@ -425,7 +429,13 @@ void task_pop_frame(struct int_frame *frame)
 #endif
 	default: 
 		lapic_timer_on(); 
-		//big_spin_unlock(&kernel_lock);
+
+#ifdef USE_BIG_KERNEL_LOCK
+		if (big_spin_haslock(&kernel_lock)) {
+			big_spin_unlock(&kernel_lock);
+		}
+#endif
+
 		iret64(frame);
 		
 		break;
