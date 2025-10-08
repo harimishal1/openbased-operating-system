@@ -23,7 +23,6 @@
 
 extern struct spinlock kernel_lock;
 
-
 uint8_t *find_user_binary() {
 	// Find the binary to run from the QEMU fw_cfg parameters
 	char *user_binary_name;
@@ -99,6 +98,9 @@ void kmain(struct boot_info *boot_info)
 	task_init();
 	sched_init();
 
+	mem_init_mp();
+	boot_cpus();
+	
 	mem_init_mp();
 	boot_cpus();
 

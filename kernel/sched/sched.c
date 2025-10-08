@@ -103,6 +103,10 @@ void sched_yield(void)
 
     if (next_task && next_task->task_status == TASK_RUNNABLE) {
         next_task->task_status = TASK_RUNNING;
+        // next_task->last_time_stamp = read_tsc();
+        // if (next_task->task_time_budget <= 0) {
+        //     next_task->task_time_budget = TIMESLICE;
+        // }
         task_run(next_task);
     }
     cprintf("No runnable tasks in the system!\n");
