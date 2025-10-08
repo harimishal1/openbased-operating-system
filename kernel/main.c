@@ -20,7 +20,6 @@
 #include <kernel/test/test.h>
 #include <kernel/symbols.h>
 
-
 uint8_t *find_user_binary() {
 	// Find the binary to run from the QEMU fw_cfg parameters
 	char *user_binary_name;
@@ -90,12 +89,12 @@ void kmain(struct boot_info *boot_info)
 	lapic_init();
 	hpet_init(rsdp);
 
-	mem_init_mp();
-	boot_cpus();
-
 	/* Set up the tasks. */
 	task_init();
 	sched_init();
+	
+	mem_init_mp();
+	boot_cpus();
 
 	/// If test does not come with a binary to run, try to find a user-specified one
 	if(binary == NULL)
