@@ -1,5 +1,6 @@
 
 #include "kernel/sched/task.h"
+#include "spinlock.h"
 #include "task.h"
 #include <types.h>
 #include <cpu.h>
@@ -13,7 +14,7 @@
 #include <kernel/sched.h>
 
 struct list runq;
-extern struct spinlock kernel_lock;
+
 
 #ifndef USE_BIG_KERNEL_LOCK
 struct spinlock runq_lock = {
@@ -24,6 +25,7 @@ struct spinlock runq_lock = {
 #endif
 
 extern size_t nuser_tasks;
+extern struct spinlock kernel_lock;
 
 void sched_init(void)
 {
@@ -39,17 +41,53 @@ void sched_init_mp(void)
 /* Runs the next runnable task. */
 void sched_yield(void)
 {
+try_again:
 	/* LAB 5: your code here. */
-    struct task *next_task = NULL;
-
-    // if (cur_task) {
-    //     uint64_t current_time_stamp = read_tsc();
-    //     uint64_t used_time = current_time_stamp - cur_task->last_time_stamp;
-    //     cur_task->last_time_stamp = current_time_stamp;
-    //     cur_task->task_time_budget -= (int64_t)used_time;
-    // }
+    assert(big_spin_haslock(&kernel_lock));
 
     if (cur_task && cur_task->task_status == TASK_RUNNING) {
+        cur_task->task_status = TASK_RUNNABLE;
+        list_add(&runq, &cur_task->task_node);
+        cprintf("sched_yield: adding frame with rip %p to runq\n", cur_task->task_frame.rip);
+        cur_task = NULL;
+    }
+
+    struct task *next_task = NULL;
+
+    while (!list_is_empty(&runq)) {
+        next_task = container_of(list_pop_tail(&runq), struct task, task_node);
+        if (next_task->task_status != TASK_RUNNABLE) {
+            // could happen due to parent proc kills child proc
+            cprintf("Warning: Found a non-runnable task in the run queue. Skipping.\n");
+            continue;
+        }
+        cprintf("[CPU %d] Switching to task with PID %d Next RIP:%p\n", this_cpu->cpu_id, next_task->task_pid,
+            next_task->task_frame.rip);
+        task_run(next_task);
+    }
+
+    // Now runq is empty
+    if (this_cpu->cpu_id == 0 && nuser_tasks == 0) {
+        cprintf("No user tasks running in the system! Halting.\n");
+        cpus[0].cpu_status = CPU_HALTED;
+        sched_halt();
+    }
+
+    if (this_cpu->cpu_id != 0 && cpus[0].cpu_status == CPU_HALTED) {
+        cprintf("CPU %d halted as CPU 0 is not halted\n", this_cpu->cpu_id);
+        this_cpu->cpu_status = CPU_HALTED;
+        sched_halt(); // This function should not return
+    }
+
+    big_spin_unlock(&kernel_lock);
+    for (int i = 0; i < 50; i++) {
+        asm volatile("pause");
+    }
+    big_spin_lock(&kernel_lock);
+    goto try_again;
+}
+
+   /*  if (cur_task && cur_task->task_status == TASK_RUNNING) {
         cur_task->task_status = TASK_RUNNABLE;
         list_add(&runq, &cur_task->task_node);
     }
@@ -65,42 +103,12 @@ void sched_yield(void)
         // }
         task_run(next_task);
     }
-
     cprintf("No runnable tasks in the system!\n");
-    sched_halt();
-}
+    sched_halt(); */
 
-bool all_cpus_halted(void)
-{
-    for (size_t i = 0; i < ncpus; i++) {
-        if (cpus[i].cpu_status != CPU_HALTED)
-            return false;
-    }
-    return true;
-}
 
 /* For now jump into the kernel monitor. */
 void sched_halt()
 {
-	// halt_kernel();
-    cur_task = NULL;
-
-    xchg(&this_cpu->cpu_status, CPU_HALTED);
-	
-    if (all_cpus_halted()) {
-        cprintf("[sched] All CPUs halted — all tasks complete.\n");
-        halt_kernel();
-    }
-
-    if (big_spin_haslock(&kernel_lock)) {
-        big_spin_unlock(&kernel_lock);
-    }
-
-    asm volatile("sti; hlt; cli");
-
-    xchg(&this_cpu->cpu_status, CPU_STARTED);
-
-    big_spin_lock(&kernel_lock);
-
-    return;
+	halt_kernel();
 }

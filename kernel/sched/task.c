@@ -30,7 +30,7 @@
 #include <kernel/mem.h>
 #include <kernel/sched.h>
 
-extern struct spinlock kernel_lock;
+
 
 extern struct list runq;
 extern int check_user_vma_range(uintptr_t *fault_va, struct task *task, void *base, size_t size, int flags);
@@ -178,10 +178,6 @@ struct task *task_alloc(pid_t ppid)
 	task->task_frame.cs = GDT_UCODE | 3;
 	task->task_frame.rflags = FLAGS_IF | 0x2;
 
-	// LAB 5
-	// task->task_time_budget = TIMESLICE;
-	// task->last_time_stamp = read_tsc();
-	// cprintf("Initialized time slice fields: budget = %u, tsc = %u\n", task->task_time_budget, task->last_time_stamp);
 
 	/* You will set task->task_frame.rip later. */
 	cprintf("[PID %5u] New task with PID %u\n",
@@ -324,9 +320,11 @@ void task_create(uint8_t *binary, enum task_type type)
  */
 void task_free(struct task *task)
 {
+	assert(big_spin_haslock(&kernel_lock));
 	struct task *waiting;
-	/* LAB 5: your code here. */
 
+	/* LAB 5: your code here. */
+	task->task_status = TASK_DYING;
 	/* If we are freeing the current task, switch to the kernel_pml4
 	 * before freeing the page tables, just in case the page gets re-used.
 	 */
@@ -335,24 +333,29 @@ void task_free(struct task *task)
 	}
 
 	if (task->task_ppid != 0) {
-		struct task *waiting = pid2task(task->task_ppid, 0);
-		if (waiting) {
-			if (waiting && waiting->task_status == TASK_NOT_RUNNABLE && 
-				(waiting->task_wait == NULL || waiting->task_wait == task)) {
-				if (waiting->task_wait_exit_status) {
+		struct task *parent = pid2task(task->task_ppid, 0);
+		if (parent) {
+			if (parent->task_status == TASK_NOT_RUNNABLE && 
+				(parent->task_wait == NULL || parent->task_wait == task)) {
+				if (parent->task_wait_exit_status) {
 					struct page_table *old_pml4 = KADDR(read_cr3());
-					load_pml4((struct page_table *)PADDR(waiting->task_pml4));
-					*(waiting->task_wait_exit_status) = task->task_exit_status;
+					load_pml4((struct page_table *)PADDR(parent->task_pml4));
+					*(parent->task_wait_exit_status) = task->task_exit_status;
 					load_pml4((struct page_table *)PADDR(old_pml4));
 				}
-				waiting->task_frame.rax = task->task_pid;
-				waiting->task_status = TASK_RUNNABLE;
-				list_add_tail(&runq, &waiting->task_node);
+				parent->task_frame.rax = task->task_pid;
+				parent->task_status = TASK_RUNNABLE;
+				cprintf("task_Free_1: adding frame with rip %p to runq\n", cur_task->task_frame.rip);
+				list_add_tail(&runq, &parent->task_node);
 				list_del(&task->task_child);
 			} else {
+				// cur task is child, dying
+				// !parent is not waiting for me
+
+				
 				list_del(&task->task_node);
 				list_del(&task->task_child);
-				list_add_tail(&waiting->task_zombies, &task->task_node);
+				list_add_tail(&parent->task_zombies, &task->task_node);
 				sched_yield();
 				return;
 			}
@@ -379,6 +382,7 @@ void task_free(struct task *task)
 
 	/* Unmap the task from the PID map. */
 	tasks[task->task_pid] = NULL;
+	nuser_tasks--;
 
 	/* Free the VMA */
 	free_vmas(task);
@@ -402,14 +406,8 @@ void task_free(struct task *task)
 void task_destroy(struct task *task)
 {
 	task_free(task);
-	/* LAB 5: your code here. */
-	if(task == cur_task){
-		cur_task = NULL;
-		sched_yield();
-	}
-
-	cprintf("Destroyed the only task - nothing more to do!\n");
-	halt_kernel();
+	
+	sched_yield();
 }
 
 /*
@@ -420,23 +418,15 @@ void task_destroy(struct task *task)
  * This function does not return. 
  */
 void task_pop_frame(struct int_frame *frame)
-{
+{ 
+	big_spin_unlock(&kernel_lock);
 	switch (frame->int_no) {
 #ifdef BONUS_SYSCALL
 		case 0x80: sysret64(frame); break;
 #endif
 	default: 
-		lapic_timer_on(); 
-
-        if ((frame->cs & 3) == 3) {
-
-            if (big_spin_haslock(&kernel_lock)) {
-                big_spin_unlock(&kernel_lock);
-            }
-        }
-
+		//lapic_timer_on();
 		iret64(frame);
-		
 		break;
 	}
 	panic("We should have gone back to userspace!");
@@ -480,7 +470,6 @@ void task_run(struct task *task)
 	}
 	load_pml4((struct page_table *)PADDR(task->task_pml4));
 	task_pop_frame(&cur_task->task_frame); */
-
 	cur_task = task;
 	cur_task->task_status = TASK_RUNNING;
 	cur_task->task_runs++;

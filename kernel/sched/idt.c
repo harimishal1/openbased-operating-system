@@ -1,4 +1,5 @@
 
+#include "kernel/sched/sched.h"
 #include "kernel/vma/pfault.h"
 #include <assert.h>
 #include <stdio.h>
@@ -198,22 +199,10 @@ void divide_handler(struct int_frame *frame)
 
 }
 
-// LAB 5
-// volatile bool reschedule = false;
 void irq_handler(struct int_frame *frame)
 {
-	// uint64_t current_time_stamp = read_tsc();
-	// if(!cur_task)return;
-    // uint64_t used_time = current_time_stamp - cur_task->last_time_stamp;
-    // cur_task->last_time_stamp = current_time_stamp;
-    // if (cur_task->task_time_budget > 0) {
-    //     cur_task->task_time_budget -= (int64_t)used_time;
-    // }
-    // if (cur_task->task_time_budget <= 0) {
-    //     reschedule = true;
-    // }
     lapic_eoi();
-	//sched_yield();
+	sched_yield(); 
 }
 
 void int_dispatch(struct int_frame *frame)
@@ -268,22 +257,32 @@ void int_handler(struct int_frame *frame)
 {
 	/* The task may have set DF and some versions of GCC rely on DF being
 	 * clear. */
-	lapic_timer_off();
+	//lapic_timer_off();
 	asm volatile("cld" ::: "cc");
 	/* Check if interrupts are disabled.
 	 * If this assertion fails, DO NOT be tempted to fix it by inserting a
 	 * "cli" in the interrupt path.
 	 */
+	 if (big_spin_haslock(&kernel_lock)) {
+		 int is_kernel_interrupted = (frame->cs & 3) == 0;
+		 if (is_kernel_interrupted) {
+			 cprintf("Kernel interrupt with kernel lock held!\n");
+			 print_int_frame(frame);
+			} else {
+				cprintf("User interrupt with kernel lock held!\n");
+				print_int_frame(frame);
+			}
+			panic("Interrupt with kernel lock held!");
+		}
+		
+	big_spin_lock(&kernel_lock);
+	cprintf("INT handler on core %d, INT_NUM=%d\n", this_cpu->cpu_id, frame->int_no);
+
 	assert(!(read_rflags() & FLAGS_IF));
 	/* cprintf("Incoming INT frame at %p\n", frame); */
 	if ((frame->cs & 3) == 3) {
 		/* Interrupt from user mode. */
 		assert(cur_task);
-
-		if (!big_spin_haslock(&kernel_lock)) {
-			big_spin_lock(&kernel_lock);
-		}
-
 		/* Copy interrupt frame (which is currently on the stack) into
 		 * 'cur_task->task_frame', so that running the task will restart at
 		 * the point of interrupt. */
@@ -296,18 +295,12 @@ void int_handler(struct int_frame *frame)
 	/* Dispatch based on the type of interrupt that occurred. */
 	int_dispatch(frame);
 
-	// LAB 5
-	// if (reschedule) {
-    // 	reschedule = false;
-    // 	sched_yield();
-    // }
-
 	/* Return to the current task, which should be running. */
-	if (cur_task) {
-		task_run(cur_task);
-	} else {
-		sched_yield();
-	}
+   if (!cur_task) {
+        sched_halt();
+        return;
+    }
+	task_run(cur_task);
 }
 
 void page_fault_handler(struct int_frame *frame)

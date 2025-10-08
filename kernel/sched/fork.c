@@ -24,7 +24,6 @@ extern struct list runq;
 extern struct task *task_alloc(pid_t ppid);
 extern struct task **tasks;
 extern size_t nuser_tasks;
-// extern struct spinlock kernel_lock;
 
 
 /* Allocates a task struct for the child process and copies the register state,
@@ -34,7 +33,6 @@ extern size_t nuser_tasks;
 struct task *task_clone(struct task *task)
 {
 	/* LAB 5: your code here. */
-	// big_spin_haslock(&kernel_lock);
 	struct task *child_task = task_alloc(task->task_pid);
 	if (!child_task) return NULL;
 
@@ -83,12 +81,14 @@ struct task *task_clone(struct task *task)
 	if (child_task->task_type == TASK_TYPE_USER) {
 		nuser_tasks++;
 	}
-	list_add(&runq, &child_task->task_node);
-	list_add(&task->task_children, &child_task->task_child);
-
-
+	
 	child_task->task_frame.rax = 0;
 	task->task_frame.rax = child_task->task_pid;
+
+	list_add(&runq, &child_task->task_node);
+	cprintf("task_clone: adding frame with rip %p to runq\n", child_task->task_frame.rip);
+
+	list_add(&task->task_children, &child_task->task_child);
 
 	return child_task;
 }

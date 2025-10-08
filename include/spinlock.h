@@ -4,6 +4,7 @@
 #include <types.h>
 
 struct cpuinfo;
+extern struct spinlock kernel_lock;;
 
 struct spinlock {
 	/* Is the lock held? */

@@ -112,7 +112,7 @@ static int sys_exit(int rcode)
 static int sys_getcpuid(void)
 {
 	/* LAB 6: your code here. */
-	return 0;
+	return this_cpu->cpu_id;
 }
 
 /* Dispatches to the correct kernel function, passing the arguments. */
@@ -160,6 +160,8 @@ int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 			return sys_waitpid((pid_t) a1, (int *) a2, (int) a3);
 		case SYS_fork:
 			return sys_fork();
+		case SYS_getcpuid:
+			return (int64_t)sys_getcpuid();
 		default: 
 			break;
 	}

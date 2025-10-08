@@ -92,14 +92,11 @@ void kmain(struct boot_info *boot_info)
 	lapic_init();
 	hpet_init(rsdp);
 		
-	//big_spin_lock(&kernel_lock);
+	big_spin_lock(&kernel_lock);
 
 	/* Set up the tasks. */
 	task_init();
 	sched_init();
-
-	mem_init_mp();
-	boot_cpus();
 	
 	mem_init_mp();
 	boot_cpus();

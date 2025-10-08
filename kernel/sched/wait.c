@@ -85,7 +85,6 @@ pid_t sys_waitpid(pid_t pid, int *rstatus, int opts)
         }
     }
     cur_task->task_wait_exit_status = rstatus;
-    cprintf("[PID %5u] Reaping task with PID %d\n", cur_task->task_pid, child->task_pid);
     sched_yield();
     panic("SHOULDNT BE HERE");
 
