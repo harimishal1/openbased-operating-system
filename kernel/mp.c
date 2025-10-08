@@ -87,9 +87,8 @@ void mp_main(void)
 	/* asm volatile(
 		"cli\n"
 		"hlt\n"); */
-    // AP is entering kernel execution for the first time.
-    // Must acquire BKL before accessing shared data like the run queue.
-
-    big_spin_lock(&kernel_lock);
+	//cprintf("MP: CPU %d halted\n", lapic_cpunum());
+	//asm volatile("hlt");
+	big_spin_lock(&kernel_lock);
 	sched_yield();
 }

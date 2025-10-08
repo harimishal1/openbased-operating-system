@@ -1,4 +1,5 @@
 #include "kernel/mem/init.h"
+#include "spinlock.h"
 #include <types.h>
 #include <assert.h>
 #include <boot.h>
@@ -19,6 +20,8 @@
 #include <kernel/test/probe.h>
 #include <kernel/test/test.h>
 #include <kernel/symbols.h>
+
+extern struct spinlock kernel_lock;
 
 uint8_t *find_user_binary() {
 	// Find the binary to run from the QEMU fw_cfg parameters
@@ -88,10 +91,15 @@ void kmain(struct boot_info *boot_info)
 	madt_init(rsdp);
 	lapic_init();
 	hpet_init(rsdp);
+		
+	//big_spin_lock(&kernel_lock);
 
 	/* Set up the tasks. */
 	task_init();
 	sched_init();
+
+	mem_init_mp();
+	boot_cpus();
 	
 	mem_init_mp();
 	boot_cpus();
@@ -107,8 +115,9 @@ void kmain(struct boot_info *boot_info)
 		halt_kernel();
 	}
 
+	// big_spin_lock(&kernel_lock);
 	task_create(binary, TASK_TYPE_USER);
-
+	
 	sched_yield();
 }
 

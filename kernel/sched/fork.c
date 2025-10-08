@@ -7,6 +7,7 @@
 #include "kernel/sched/task.h"
 #include "kernel/vma/show.h"
 #include "lib.h"
+#include "spinlock.h"
 #include "types.h"
 #include "x86-64/memory.h"
 #include "x86-64/paging.h"
@@ -23,6 +24,8 @@ extern struct list runq;
 extern struct task *task_alloc(pid_t ppid);
 extern struct task **tasks;
 extern size_t nuser_tasks;
+// extern struct spinlock kernel_lock;
+
 
 /* Allocates a task struct for the child process and copies the register state,
  * the VMAs and the page tables. Once the child task has been set up, it is
@@ -31,6 +34,7 @@ extern size_t nuser_tasks;
 struct task *task_clone(struct task *task)
 {
 	/* LAB 5: your code here. */
+	// big_spin_haslock(&kernel_lock);
 	struct task *child_task = task_alloc(task->task_pid);
 	if (!child_task) return NULL;
 

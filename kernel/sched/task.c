@@ -178,6 +178,10 @@ struct task *task_alloc(pid_t ppid)
 	task->task_frame.cs = GDT_UCODE | 3;
 	task->task_frame.rflags = FLAGS_IF | 0x2;
 
+	// LAB 5
+	// task->task_time_budget = TIMESLICE;
+	// task->last_time_stamp = read_tsc();
+	// cprintf("Initialized time slice fields: budget = %u, tsc = %u\n", task->task_time_budget, task->last_time_stamp);
 
 	/* You will set task->task_frame.rip later. */
 	cprintf("[PID %5u] New task with PID %u\n",
@@ -425,6 +429,7 @@ void task_pop_frame(struct int_frame *frame)
 		lapic_timer_on(); 
 
         if ((frame->cs & 3) == 3) {
+
             if (big_spin_haslock(&kernel_lock)) {
                 big_spin_unlock(&kernel_lock);
             }

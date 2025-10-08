@@ -65,6 +65,7 @@ CPUS = 1
 # To specify QEMU parameters during testing, use the "qemu" field
 # in a test specification.
 #QEMUEXTRA = -d int,cpu_reset
+QEMUEXTRA = -d int,cpu_reset,guest_errors,mmu -D qemu.log
 
 # Using TEST, it is possible to hardcode the execution of a single
 # test, for debugging purposes. Normally, the run-test-foo and
