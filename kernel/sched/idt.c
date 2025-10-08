@@ -271,8 +271,6 @@ void int_handler(struct int_frame *frame)
 	if ((frame->cs & 3) == 3) {
 		/* Interrupt from user mode. */
 		assert(cur_task);
-
-
 		/* Copy interrupt frame (which is currently on the stack) into
 		 * 'cur_task->task_frame', so that running the task will restart at
 		 * the point of interrupt. */

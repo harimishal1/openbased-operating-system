@@ -87,8 +87,8 @@ void mp_main(void)
 	/* asm volatile(
 		"cli\n"
 		"hlt\n"); */
-	cprintf("MP: CPU %d halted\n", lapic_cpunum());
-	asm volatile("hlt");
+	//cprintf("MP: CPU %d halted\n", lapic_cpunum());
+	//asm volatile("hlt");
 	big_spin_lock(&kernel_lock);
 	sched_yield();
 }

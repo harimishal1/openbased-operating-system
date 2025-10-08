@@ -92,15 +92,15 @@ void kmain(struct boot_info *boot_info)
 	madt_init(rsdp);
 	lapic_init();
 	hpet_init(rsdp);
-
-	big_spin_lock(&kernel_lock);
-
-	mem_init_mp();
-	boot_cpus();
+		
+	//big_spin_lock(&kernel_lock);
 
 	/* Set up the tasks. */
 	task_init();
 	sched_init();
+
+	mem_init_mp();
+	boot_cpus();
 
 	/// If test does not come with a binary to run, try to find a user-specified one
 	if(binary == NULL)
@@ -113,9 +113,9 @@ void kmain(struct boot_info *boot_info)
 		halt_kernel();
 	}
 
+	big_spin_lock(&kernel_lock);
 	task_create(binary, TASK_TYPE_USER);
 	
-
 	sched_yield();
 }
 

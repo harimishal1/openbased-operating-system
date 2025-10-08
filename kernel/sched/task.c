@@ -425,7 +425,7 @@ void task_pop_frame(struct int_frame *frame)
 		case 0x80: sysret64(frame); break;
 #endif
 	default: 
-		lapic_timer_on(); 
+		lapic_timer_on();
 		iret64(frame);
 		
 		break;
@@ -471,7 +471,6 @@ void task_run(struct task *task)
 	}
 	load_pml4((struct page_table *)PADDR(task->task_pml4));
 	task_pop_frame(&cur_task->task_frame); */
-
 	cur_task = task;
 	cur_task->task_status = TASK_RUNNING;
 	cur_task->task_runs++;
