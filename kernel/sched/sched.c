@@ -13,7 +13,7 @@
 #include <kernel/sched.h>
 
 struct list runq;
-
+extern struct spinlock kernel_lock;
 
 #ifndef USE_BIG_KERNEL_LOCK
 struct spinlock runq_lock = {
@@ -70,8 +70,37 @@ void sched_yield(void)
     sched_halt();
 }
 
+bool all_cpus_halted(void)
+{
+    for (size_t i = 0; i < ncpus; i++) {
+        if (cpus[i].cpu_status != CPU_HALTED)
+            return false;
+    }
+    return true;
+}
+
 /* For now jump into the kernel monitor. */
 void sched_halt()
 {
-	halt_kernel();
+	// halt_kernel();
+    cur_task = NULL;
+
+    xchg(&this_cpu->cpu_status, CPU_HALTED);
+	
+    if (all_cpus_halted()) {
+        cprintf("[sched] All CPUs halted — all tasks complete.\n");
+        halt_kernel();
+    }
+
+    if (big_spin_haslock(&kernel_lock)) {
+        big_spin_unlock(&kernel_lock);
+    }
+
+    asm volatile("sti; hlt; cli");
+
+    xchg(&this_cpu->cpu_status, CPU_STARTED);
+
+    big_spin_lock(&kernel_lock);
+
+    return;
 }

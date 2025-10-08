@@ -303,7 +303,11 @@ void int_handler(struct int_frame *frame)
     // }
 
 	/* Return to the current task, which should be running. */
-	task_run(cur_task);
+	if (cur_task) {
+		task_run(cur_task);
+	} else {
+		sched_yield();
+	}
 }
 
 void page_fault_handler(struct int_frame *frame)
