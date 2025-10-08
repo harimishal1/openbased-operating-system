@@ -429,7 +429,6 @@ void task_pop_frame(struct int_frame *frame)
 		lapic_timer_on(); 
 
         if ((frame->cs & 3) == 3) {
-
             if (big_spin_haslock(&kernel_lock)) {
                 big_spin_unlock(&kernel_lock);
             }
