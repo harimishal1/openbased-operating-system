@@ -7,6 +7,7 @@
 #include "stdio.h"
 #include <x86-64/asm.h>
 
+#include <spinlock.h> 
 #include <cpu.h>
 
 #include <kernel/acpi.h>
@@ -17,6 +18,8 @@
 /* While boot_cpus() is booting a given CPU, it communicates the per-core stack
  * pointer that should be loaded by boot_ap().
  */
+extern struct spinlock kernel_lock;
+
 void *mpentry_kstack;
 
 void boot_cpus(void)
@@ -33,6 +36,7 @@ void boot_cpus(void)
 	for (cpu = cpus; cpu < cpus + ncpus; ++cpu) {
 		/* Skip the boot CPU */
 		if (cpu == boot_cpu) {
+			cprintf("SMP: CPU %d starting\n", lapic_cpunum());
 			continue;
 		}
 
@@ -83,5 +87,9 @@ void mp_main(void)
 	/* asm volatile(
 		"cli\n"
 		"hlt\n"); */
+    // AP is entering kernel execution for the first time.
+    // Must acquire BKL before accessing shared data like the run queue.
+
+    big_spin_lock(&kernel_lock);
 	sched_yield();
 }

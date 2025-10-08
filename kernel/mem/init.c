@@ -193,6 +193,9 @@ void mem_init_mp(void)
 
 		if (cpu == boot_cpu) {
             // hari - this skips boot cpu but idk if it's right lmao
+			cprintf("[SMP] CPU %d kernel stack: [%p - %p])\n",
+                idx,
+                (void *)cpu->cpu_tss.rsp[0], cpu->cpu_tss.rsp[0] + KSTACK_SIZE);
             continue;
         }
 		uintptr_t stack_top = KSTACK_TOP - idx * (KSTACK_SIZE + KSTACK_GAP);
@@ -209,7 +212,7 @@ void mem_init_mp(void)
 			page_insert(kernel_pml4, page, (void *)(stack_bottom + off), PAGE_WRITE | PAGE_NO_EXEC);
         }
 
-		//cpu->cpu_tss.rsp[0] = stack_top; // now we set this in gdt 
+		cpu->cpu_tss.rsp[0] = stack_top;
         cprintf("[SMP] CPU %d kernel stack: [%p - %p), guard: [%p - %p)\n",
                 idx,
                 (void *)stack_bottom, (void *)stack_top,

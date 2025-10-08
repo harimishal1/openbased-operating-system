@@ -20,10 +20,7 @@
 #include <lib.h>
 #include <paging.h>
 
-#ifdef USE_BIG_KERNEL_LOCK
-	extern struct spinlock kernel_lock;
-#endif
-
+extern struct spinlock kernel_lock;
 extern int task_page_fault_handler(struct task *task, void *va, int flags);
 
 /* LAB 3: your code here. */
@@ -218,7 +215,7 @@ void irq_handler(struct int_frame *frame)
         reschedule = true;
     }
     lapic_eoi();
-	sched_yield();
+	//sched_yield();
 }
 
 void int_dispatch(struct int_frame *frame)
@@ -286,11 +283,9 @@ void int_handler(struct int_frame *frame)
 		/* Interrupt from user mode. */
 		assert(cur_task);
 
-#ifdef USE_BIG_KERNEL_LOCK
 		if (!big_spin_haslock(&kernel_lock)) {
 			big_spin_lock(&kernel_lock);
 		}
-#endif
 
 		/* Copy interrupt frame (which is currently on the stack) into
 		 * 'cur_task->task_frame', so that running the task will restart at

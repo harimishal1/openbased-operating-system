@@ -46,7 +46,7 @@ void gdt_init_mp(void)
 	
 	size_t i = this_cpu - cpus;
 
-    this_cpu->cpu_tss.rsp[0] = KSTACK_TOP - (i + 1) * (KSTACK_SIZE + PAGE_SIZE);
+    //this_cpu->cpu_tss.rsp[0] = KSTACK_TOP - (i + 1) * (KSTACK_SIZE + PAGE_SIZE);
 
     set_tss_entry((struct tss_entry *)(gdt_entries + (GDT_TSS0 >> 3) + (i * 2)),
                   &this_cpu->cpu_tss);

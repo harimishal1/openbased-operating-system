@@ -41,7 +41,6 @@ void sched_yield(void)
 {
 	/* LAB 5: your code here. */
     struct task *next_task = NULL;
-
     if (cur_task) {
         uint64_t current_time_stamp = read_tsc();
         uint64_t used_time = current_time_stamp - cur_task->last_time_stamp;
@@ -53,7 +52,6 @@ void sched_yield(void)
         cur_task->task_status = TASK_RUNNABLE;
         list_add(&runq, &cur_task->task_node);
     }
-
     if (!list_is_empty(&runq)) {
         next_task = container_of(list_pop_tail(&runq), struct task, task_node);
     }
