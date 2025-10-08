@@ -69,7 +69,6 @@ static const char *int_names[256] = {
 	[INT_SECURITY] = "Security (#SX)",
 	[INT_SYSCALL] = "System Call(#SC)",
 	[INT_PANIC] = "Panic",
-	// LAB 5
 	[IRQ_TIMER] = "HW Timer",
 };
 
@@ -169,7 +168,6 @@ void idt_init(void)
 	set_idt_entry(&entries[INT_SECURITY], (void *)isr30, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_SYSCALL], (void *)isr128, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(3), GDT_KCODE);
 	set_idt_entry(&entries[INT_PANIC], (void *)isr127, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(3), GDT_KCODE);
-	// LAB 5
 	set_idt_entry(&entries[IRQ_TIMER], (void *)isr32,IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0),  GDT_KCODE);
 	load_idt(&idtr);
 }
@@ -200,20 +198,8 @@ void divide_handler(struct int_frame *frame)
 
 }
 
-// LAB 5
-volatile bool reschedule = false;
 void irq_handler(struct int_frame *frame)
 {
-	uint64_t current_time_stamp = read_tsc();
-	if(!cur_task)return;
-    uint64_t used_time = current_time_stamp - cur_task->last_time_stamp;
-    cur_task->last_time_stamp = current_time_stamp;
-    if (cur_task->task_time_budget > 0) {
-        cur_task->task_time_budget -= (int64_t)used_time;
-    }
-    if (cur_task->task_time_budget <= 0) {
-        reschedule = true;
-    }
     lapic_eoi();
 	//sched_yield();
 }
@@ -248,7 +234,6 @@ void int_dispatch(struct int_frame *frame)
 		case INT_DIVIDE:
 			divide_handler(frame);
 			return;
-		// LAB 5
 		case IRQ_TIMER:
 			irq_handler(frame);
 			return;
@@ -298,12 +283,6 @@ void int_handler(struct int_frame *frame)
 
 	/* Dispatch based on the type of interrupt that occurred. */
 	int_dispatch(frame);
-
-	// LAB 5
-	if (reschedule) {
-    	reschedule = false;
-    	sched_yield();
-    }
 
 	/* Return to the current task, which should be running. */
 	task_run(cur_task);
