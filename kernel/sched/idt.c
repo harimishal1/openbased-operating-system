@@ -69,7 +69,6 @@ static const char *int_names[256] = {
 	[INT_SECURITY] = "Security (#SX)",
 	[INT_SYSCALL] = "System Call(#SC)",
 	[INT_PANIC] = "Panic",
-	// LAB 5
 	[IRQ_TIMER] = "HW Timer",
 };
 
@@ -169,7 +168,6 @@ void idt_init(void)
 	set_idt_entry(&entries[INT_SECURITY], (void *)isr30, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0), GDT_KCODE);
 	set_idt_entry(&entries[INT_SYSCALL], (void *)isr128, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(3), GDT_KCODE);
 	set_idt_entry(&entries[INT_PANIC], (void *)isr127, IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(3), GDT_KCODE);
-	// LAB 5
 	set_idt_entry(&entries[IRQ_TIMER], (void *)isr32,IDT_INT_GATE32 | IDT_PRESENT | IDT_PRIVL(0),  GDT_KCODE);
 	load_idt(&idtr);
 }
@@ -248,7 +246,6 @@ void int_dispatch(struct int_frame *frame)
 		case INT_DIVIDE:
 			divide_handler(frame);
 			return;
-		// LAB 5
 		case IRQ_TIMER:
 			irq_handler(frame);
 			return;

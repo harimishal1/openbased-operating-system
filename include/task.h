@@ -30,8 +30,6 @@ enum task_type {
 	TASK_TYPE_USER = 0,
 };
 
-#define TIMESLICE 100000000ULL
-
 struct task {
 	/* The saved registers. */
 	struct int_frame task_frame;
@@ -76,9 +74,6 @@ struct task {
 	struct list task_node;
 
 	int *task_wait_exit_status;
-
-	int64_t task_time_budget;
-	uint64_t last_time_stamp;
 
 #ifndef USE_BIG_KERNEL_LOCK
 	/* Per-task lock */
