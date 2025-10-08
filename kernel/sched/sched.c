@@ -1,5 +1,6 @@
 
 #include "kernel/sched/task.h"
+#include "spinlock.h"
 #include "task.h"
 #include <types.h>
 #include <cpu.h>
@@ -24,6 +25,7 @@ struct spinlock runq_lock = {
 #endif
 
 extern size_t nuser_tasks;
+extern struct spinlock kernel_lock;
 
 void sched_init(void)
 {
@@ -40,6 +42,7 @@ void sched_init_mp(void)
 void sched_yield(void)
 {
 	/* LAB 5: your code here. */
+    // assert(big_spin_haslock(&kernel_lock));
     struct task *next_task = NULL;
 
     if (cur_task && cur_task->task_status == TASK_RUNNING) {

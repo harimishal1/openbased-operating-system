@@ -1,4 +1,5 @@
 
+#include "kernel/sched/sched.h"
 #include "kernel/vma/pfault.h"
 #include <assert.h>
 #include <stdio.h>
@@ -201,7 +202,7 @@ void divide_handler(struct int_frame *frame)
 void irq_handler(struct int_frame *frame)
 {
     lapic_eoi();
-	//sched_yield();
+	sched_yield(); 
 }
 
 void int_dispatch(struct int_frame *frame)
@@ -262,15 +263,15 @@ void int_handler(struct int_frame *frame)
 	 * If this assertion fails, DO NOT be tempted to fix it by inserting a
 	 * "cli" in the interrupt path.
 	 */
+
+	big_spin_lock(&kernel_lock);
+
 	assert(!(read_rflags() & FLAGS_IF));
 	/* cprintf("Incoming INT frame at %p\n", frame); */
 	if ((frame->cs & 3) == 3) {
 		/* Interrupt from user mode. */
 		assert(cur_task);
 
-		if (!big_spin_haslock(&kernel_lock)) {
-			big_spin_lock(&kernel_lock);
-		}
 
 		/* Copy interrupt frame (which is currently on the stack) into
 		 * 'cur_task->task_frame', so that running the task will restart at
@@ -285,6 +286,10 @@ void int_handler(struct int_frame *frame)
 	int_dispatch(frame);
 
 	/* Return to the current task, which should be running. */
+   if (!cur_task) {
+        sched_halt();
+        return;
+    }
 	task_run(cur_task);
 }
 

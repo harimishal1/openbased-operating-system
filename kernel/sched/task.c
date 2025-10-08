@@ -416,21 +416,16 @@ void task_destroy(struct task *task)
  * This function does not return. 
  */
 void task_pop_frame(struct int_frame *frame)
-{
+{ 
+	big_spin_unlock(&kernel_lock);
+
+
 	switch (frame->int_no) {
 #ifdef BONUS_SYSCALL
 		case 0x80: sysret64(frame); break;
 #endif
 	default: 
 		lapic_timer_on(); 
-
-        if ((frame->cs & 3) == 3) {
-
-            if (big_spin_haslock(&kernel_lock)) {
-                big_spin_unlock(&kernel_lock);
-            }
-        }
-
 		iret64(frame);
 		
 		break;

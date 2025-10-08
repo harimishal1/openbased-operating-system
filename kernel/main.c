@@ -1,4 +1,5 @@
 #include "kernel/mem/init.h"
+#include "spinlock.h"
 #include <types.h>
 #include <assert.h>
 #include <boot.h>
@@ -19,6 +20,8 @@
 #include <kernel/test/probe.h>
 #include <kernel/test/test.h>
 #include <kernel/symbols.h>
+
+extern struct spinlock kernel_lock;
 
 
 uint8_t *find_user_binary() {
@@ -90,6 +93,8 @@ void kmain(struct boot_info *boot_info)
 	lapic_init();
 	hpet_init(rsdp);
 
+	big_spin_lock(&kernel_lock);
+
 	mem_init_mp();
 	boot_cpus();
 
@@ -109,6 +114,7 @@ void kmain(struct boot_info *boot_info)
 	}
 
 	task_create(binary, TASK_TYPE_USER);
+	
 
 	sched_yield();
 }
