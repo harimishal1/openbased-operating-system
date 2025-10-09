@@ -357,7 +357,6 @@ void task_free(struct task *task)
 			} else {
 				// cur task is child, dying
 				// !parent is not waiting for me
-
 				
 				list_del(&task->task_node);
 				list_del(&task->task_child);

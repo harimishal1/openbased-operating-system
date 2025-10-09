@@ -77,7 +77,7 @@ pid_t sys_waitpid(pid_t pid, int *rstatus, int opts)
                 *rstatus = child->task_exit_status;
             }
             list_del(&child->task_node);
-            list_del(&child->task_child);
+            //list_del(&child->task_child);
             cprintf("[PID %5u] Reaping task with PID %d\n",
                 cur_task->task_pid, child->task_pid);
                 task_free(child);
@@ -89,7 +89,7 @@ pid_t sys_waitpid(pid_t pid, int *rstatus, int opts)
     cur_task->task_wait = child;
     cur_task->task_status = TASK_NOT_RUNNABLE;
     cur_task->task_wait_exit_status = rstatus;
-    //cur_task = NULL;
+    cur_task = NULL;
     sched_yield();
     panic("SHOULDNT BE HERE");
 
