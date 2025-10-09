@@ -44,7 +44,7 @@ TEST_PARALLEL = 1
 # This setting sets the number of cores available to OpenLSD. When
 # not provided, the default is 1. Changing this is only relevant
 # for lab 6, when doing multicore.
-CPUS = 2
+CPUS = 1
 
 # It is possible to change the port GDB listens on, but do note
 # that the default value has been hardcoded into the VS Code and
@@ -76,7 +76,7 @@ CPUS = 2
 # Using the BIG_KERNEL_LOCK setting, you can switch between the
 # big kernel lock (1), or fine-grained locking (0). Make sure to
 # rebuild your kernel after changing this!
-BIG_KERNEL_LOCK = 1
+BIG_KERNEL_LOCK = 0
 
 # Using various FLAGS, it is possible to pass additional compilation
 # flags to the compiler or linker. For example, provide -DFOO to

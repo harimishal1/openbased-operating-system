@@ -229,6 +229,9 @@ struct page_info *buddy_find(size_t req_order)
 struct page_info *page_alloc(int alloc_flags)
 {
 	/* LAB 1: your code here. */
+
+	fine_spin_lock(&buddy_lock);
+
 	size_t req_order = 0;
 	if (alloc_flags & ALLOC_HUGE) {
 		req_order = BUDDY_2M_PAGE;
@@ -248,6 +251,9 @@ struct page_info *page_alloc(int alloc_flags)
         size_t bytes = (size_t)1ULL << (PAGE_TABLE_SHIFT + req_order);
         memset(page2kva(page), 0, bytes);
     }
+
+	fine_spin_unlock(&buddy_lock);
+
     return page;
 }
 
@@ -262,6 +268,9 @@ struct page_info *page_alloc(int alloc_flags)
 void page_free(struct page_info *pp)
 {	
 	/* LAB 1: your code here. */
+
+	fine_spin_lock(&buddy_lock);
+
 	//double free detection
 	#ifdef DOUBLE_FREE_DETECTION
 	assert(pp->pp_avail == 1);   
@@ -285,6 +294,8 @@ void page_free(struct page_info *pp)
    	pp = buddy_merge(pp);
 	pp->pp_free = 1;
 	list_add_tail(&buddy_free_list[pp->pp_order], &pp->pp_node);
+
+	fine_spin_unlock(&buddy_lock);
 }
 
 /*

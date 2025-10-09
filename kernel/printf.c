@@ -26,7 +26,7 @@ static void putch(int ch, int *cnt)
 int vcprintf(const char *fmt, va_list ap)
 {
 	int cnt = 0;
-
+	assert(fine_spin_haslock(&console_lock));
 	vprintfmt((void*)putch, &cnt, fmt, ap);
 	return cnt;
 }
@@ -36,9 +36,13 @@ int cprintf(const char *fmt, ...)
 	va_list ap;
 	int cnt;
 
+	fine_spin_lock(&console_lock);
+
 	va_start(ap, fmt);
 	cnt = vcprintf(fmt, ap);
 	va_end(ap);
+
+	fine_spin_unlock(&console_lock);
 
 	return cnt;
 }

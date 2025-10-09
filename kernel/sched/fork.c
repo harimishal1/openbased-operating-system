@@ -87,7 +87,8 @@ struct task *task_clone(struct task *task)
 	child_task->task_frame.rax = 0;
 	task->task_frame.rax = child_task->task_pid;
 
-	list_add(&runq, &child_task->task_node);
+	// list_add(&runq, &child_task->task_node);
+	list_add(&this_cpu->runq, &child_task->task_node);
 	//cprintf("task_clone: adding frame with rip %p to runq\n", child_task->task_frame.rip);
 
 	list_add(&task->task_children, &child_task->task_child);

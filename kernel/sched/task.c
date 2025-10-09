@@ -169,6 +169,7 @@ struct task *task_alloc(pid_t ppid)
 	task->task_type = TASK_TYPE_USER;
 	task->task_status = TASK_RUNNABLE;
 	task->task_runs = 0;
+	task->task_cpunum = lapic_cpunum();
 
 	memset(&task->task_frame, 0, sizeof task->task_frame);
 
@@ -314,7 +315,8 @@ void task_create(uint8_t *binary, enum task_type type)
 	task->task_ppid = 0;
 	tasks[task->task_pid] = task;
 
-	list_add(&runq, &task->task_node);
+	// list_add(&runq, &task->task_node);
+	list_add(&this_cpu->runq, &task->task_node);
 
 	return;
 }
@@ -350,7 +352,8 @@ void task_free(struct task *task)
 				parent->task_status = TASK_RUNNABLE;
 				//cprintf("task_Free_1: adding frame with rip %p to runq\n", cur_task->task_frame.rip);
 				list_del(&task->task_child);
-				list_add_tail(&runq, &parent->task_node);
+				// list_add_tail(&runq, &parent->task_node);
+				list_add(&this_cpu->runq, &parent->task_node);
 			} else {
 				// cur task is child, dying
 				// !parent is not waiting for me

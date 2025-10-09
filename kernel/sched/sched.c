@@ -30,12 +30,20 @@ extern struct spinlock kernel_lock;
 void sched_init(void)
 {
 	list_init(&runq);
+
+	list_init(&this_cpu->runq);
+	list_init(&this_cpu->nextq);
+	this_cpu->runq_len = 0;
 }
 
 void sched_init_mp(void)
 {
 	/* LAB 6: your code here. */
     cur_task = NULL;
+
+	list_init(&this_cpu->runq);
+	list_init(&this_cpu->nextq);
+	this_cpu->runq_len = 0;
 }
 
 /* Runs the next runnable task. */
@@ -43,19 +51,24 @@ void sched_yield(void)
 {
 try_again:
 	/* LAB 5: your code here. */
-    assert(big_spin_haslock(&kernel_lock));
+    // assert(big_spin_haslock(&kernel_lock));
 
     if (cur_task && cur_task->task_status == TASK_RUNNING) {
         cur_task->task_status = TASK_RUNNABLE;
-        list_add(&runq, &cur_task->task_node);
+        // list_add(&runq, &cur_task->task_node);
+		if (cur_task->task_cpunum == this_cpu->cpu_id && this_cpu->runq_len > 0) {
+			this_cpu->runq_len--;
+		}
+		list_add(&this_cpu->nextq, &cur_task->task_node);
         // cprintf("sched_yield: adding frame with rip %p to runq\n", cur_task->task_frame.rip);
         cur_task = NULL;
     }
 
     struct task *next_task = NULL;
 
-    while (!list_is_empty(&runq)) {
-        next_task = container_of(list_pop_tail(&runq), struct task, task_node);
+	// First try from own runq
+    while (!list_is_empty(&this_cpu->runq)) {
+        next_task = container_of(list_pop_tail(&this_cpu->runq), struct task, task_node);
         // cprintf("next task pid is %d and whther the runq is empty %d\n", next_task->task_pid, list_is_empty(&runq));
         if (next_task->task_status != TASK_RUNNABLE) {
             // could happen due to parent proc kills child proc
@@ -64,10 +77,39 @@ try_again:
         }
         // cprintf("[CPU %d] Switching to task with PID %d Next RIP:%p\n", this_cpu->cpu_id, next_task->task_pid,
             // next_task->task_frame.rip);
+
+		next_task->task_cpunum = this_cpu->cpu_id;
+		this_cpu->runq_len++;
         task_run(next_task);
     }
 
-    // Now runq is empty
+	if (fine_spin_haslock(&runq_lock)) {
+		fine_spin_unlock(&runq_lock);
+		goto try_again;
+	}
+	// Now own runq is empty so try taking some from the global
+    if (fine_spin_trylock(&runq_lock) == 0) {
+        int take_from_global_runq = 1; // idk what makes sense here for now
+        for (int i = 0; i < take_from_global_runq && !list_is_empty(&runq); ++i) {
+            struct list *node = list_pop_tail(&runq);
+            list_add(&this_cpu->runq, node);
+        }
+
+		if (fine_spin_haslock(&runq_lock)) {
+			fine_spin_unlock(&runq_lock);
+		}
+        goto try_again;
+		
+	} else if (!list_is_empty(&this_cpu->nextq)) { // If cant get lock, move from nextq
+		while (!list_is_empty(&this_cpu->nextq)) {
+            struct list *node = list_pop_tail(&this_cpu->nextq);
+            list_add(&this_cpu->runq, node);
+        }
+
+        this_cpu->runq_len = 0;
+        goto try_again;
+	}
+
     if (this_cpu->cpu_id == 0 && nuser_tasks == 0) {
         cprintf("No user tasks running in the system! Halting.\n");
         cpus[0].cpu_status = CPU_HALTED;
