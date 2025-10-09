@@ -230,7 +230,9 @@ struct page_info *page_alloc(int alloc_flags)
 {
 	/* LAB 1: your code here. */
 
-	fine_spin_lock(&buddy_lock);
+	if (!fine_spin_haslock(&buddy_lock)) {
+		fine_spin_lock(&buddy_lock);
+	}
 
 	size_t req_order = 0;
 	if (alloc_flags & ALLOC_HUGE) {
@@ -252,7 +254,9 @@ struct page_info *page_alloc(int alloc_flags)
         memset(page2kva(page), 0, bytes);
     }
 
-	fine_spin_unlock(&buddy_lock);
+	if (fine_spin_haslock(&buddy_lock)) {
+		fine_spin_unlock(&buddy_lock);
+	}
 
     return page;
 }

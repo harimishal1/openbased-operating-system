@@ -87,19 +87,28 @@ try_again:
 		fine_spin_unlock(&runq_lock);
 		goto try_again;
 	}
-	// Now own runq is empty so try taking some from the global
+	// Now own runq is empty so try taking some from the global or migrate
     if (fine_spin_trylock(&runq_lock) == 0) {
-        int take_from_global_runq = 1; // idk what makes sense here for now
-        for (int i = 0; i < take_from_global_runq && !list_is_empty(&runq); ++i) {
-            struct list *node = list_pop_tail(&runq);
-            list_add(&this_cpu->runq, node);
-        }
+		if (list_is_empty(&runq) && this_cpu->runq_len > 0) {
+			int migrate_count = this_cpu->runq_len / 2;
+        	for (int i = 0; i < migrate_count && !list_is_empty(&this_cpu->nextq); i++) {
+        	    struct list *node = list_pop_tail(&this_cpu->nextq);
+        	    list_add(&runq, node);
+        	    this_cpu->runq_len--;
+        	}
+		} else {
+        	int take_from_global_runq = 1;
+        	for (int i = 0; i < take_from_global_runq && !list_is_empty(&runq); ++i) {
+        	    struct list *node = list_pop_tail(&runq);
+        	    list_add(&this_cpu->runq, node);
+        	}
+		}
 
 		if (fine_spin_haslock(&runq_lock)) {
 			fine_spin_unlock(&runq_lock);
 		}
         goto try_again;
-		
+
 	} else if (!list_is_empty(&this_cpu->nextq)) { // If cant get lock, move from nextq
 		while (!list_is_empty(&this_cpu->nextq)) {
             struct list *node = list_pop_tail(&this_cpu->nextq);

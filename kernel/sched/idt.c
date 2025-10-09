@@ -296,11 +296,16 @@ void int_handler(struct int_frame *frame)
 	int_dispatch(frame);
 
 	/* Return to the current task, which should be running. */
-   if (!cur_task) {
-        sched_halt();
-        return;
-    }
-	task_run(cur_task);
+//    if (!cur_task) {
+//         sched_halt();
+//         return;
+//     }
+// 	task_run(cur_task);
+	if(cur_task) {
+		task_run(cur_task);
+	} else {
+		sched_yield();
+	}
 }
 
 void page_fault_handler(struct int_frame *frame)
