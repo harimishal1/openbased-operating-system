@@ -1,0 +1,5 @@
+name: Memory Pressure test
+description: Basic test to put the memory system under pressure to force swapping
+
+matchlines:
+  - Memory Pressure test successful.

@@ -18,6 +18,7 @@
 #include <kernel/test/probe.h>
 #include <kernel/test/test.h>
 #include <kernel/symbols.h>
+#include <kernel/dev/pci.h>
 
 
 uint8_t *find_user_binary() {
@@ -89,6 +90,7 @@ void kmain(struct boot_info *boot_info)
 	lapic_init();
 	hpet_init(rsdp);
 
+	pci_init(rsdp);
 
 
 	/* Set up the tasks. */
