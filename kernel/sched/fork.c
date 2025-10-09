@@ -43,6 +43,8 @@ struct task *task_clone(struct task *task)
 	list_init(&child_task->task_mmap);
 	list_init(&child_task->task_children);
 	list_init(&child_task->task_zombies);
+	list_init(&child_task->task_node);
+
 
 	// loop over all vmas in parent task
 	struct list *node;
@@ -86,7 +88,7 @@ struct task *task_clone(struct task *task)
 	task->task_frame.rax = child_task->task_pid;
 
 	list_add(&runq, &child_task->task_node);
-	cprintf("task_clone: adding frame with rip %p to runq\n", child_task->task_frame.rip);
+	//cprintf("task_clone: adding frame with rip %p to runq\n", child_task->task_frame.rip);
 
 	list_add(&task->task_children, &child_task->task_child);
 

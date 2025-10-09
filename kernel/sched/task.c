@@ -301,6 +301,9 @@ void task_create(uint8_t *binary, enum task_type type)
 	list_init(&task->task_mmap);
 	list_init(&task->task_children);
 	list_init(&task->task_zombies);
+	list_init(&task->task_node);
+	task->task_wait = NULL;
+
 	task_load_elf (task, binary);
 	task->task_type = type;
 
@@ -345,9 +348,9 @@ void task_free(struct task *task)
 				}
 				parent->task_frame.rax = task->task_pid;
 				parent->task_status = TASK_RUNNABLE;
-				cprintf("task_Free_1: adding frame with rip %p to runq\n", cur_task->task_frame.rip);
-				list_add_tail(&runq, &parent->task_node);
+				//cprintf("task_Free_1: adding frame with rip %p to runq\n", cur_task->task_frame.rip);
 				list_del(&task->task_child);
+				list_add_tail(&runq, &parent->task_node);
 			} else {
 				// cur task is child, dying
 				// !parent is not waiting for me
@@ -406,7 +409,9 @@ void task_free(struct task *task)
 void task_destroy(struct task *task)
 {
 	task_free(task);
-	
+	if(task == cur_task) {
+		cur_task = NULL;
+	}
 	sched_yield();
 }
 
@@ -419,13 +424,15 @@ void task_destroy(struct task *task)
  */
 void task_pop_frame(struct int_frame *frame)
 { 
+	// print saved rsp
+	//cprintf("saved rsp is %p\n", frame->rsp);
 	big_spin_unlock(&kernel_lock);
 	switch (frame->int_no) {
 #ifdef BONUS_SYSCALL
 		case 0x80: sysret64(frame); break;
 #endif
 	default: 
-		//lapic_timer_on();
+		lapic_timer_on();
 		iret64(frame);
 		break;
 	}
@@ -459,17 +466,7 @@ void task_run(struct task *task)
 	 */
 
 	/* LAB 3: Your code here. */
-	/* if (task != cur_task) {
-		if (cur_task && cur_task->task_status == TASK_RUNNING) {
-			cur_task->task_status = TASK_RUNNABLE;
-			list_add(&runq, &cur_task->task_node);
-		}
-		cur_task = task;
-		cur_task->task_status = TASK_RUNNING;
-		cur_task->task_runs++;
-	}
-	load_pml4((struct page_table *)PADDR(task->task_pml4));
-	task_pop_frame(&cur_task->task_frame); */
+
 	cur_task = task;
 	cur_task->task_status = TASK_RUNNING;
 	cur_task->task_runs++;

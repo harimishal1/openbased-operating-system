@@ -48,7 +48,7 @@ try_again:
     if (cur_task && cur_task->task_status == TASK_RUNNING) {
         cur_task->task_status = TASK_RUNNABLE;
         list_add(&runq, &cur_task->task_node);
-        cprintf("sched_yield: adding frame with rip %p to runq\n", cur_task->task_frame.rip);
+        // cprintf("sched_yield: adding frame with rip %p to runq\n", cur_task->task_frame.rip);
         cur_task = NULL;
     }
 
@@ -56,13 +56,14 @@ try_again:
 
     while (!list_is_empty(&runq)) {
         next_task = container_of(list_pop_tail(&runq), struct task, task_node);
+        // cprintf("next task pid is %d and whther the runq is empty %d\n", next_task->task_pid, list_is_empty(&runq));
         if (next_task->task_status != TASK_RUNNABLE) {
             // could happen due to parent proc kills child proc
-            cprintf("Warning: Found a non-runnable task in the run queue. Skipping.\n");
+            //cprintf("Warning: Found a non-runnable task in the run queue. Skipping.\n");
             continue;
         }
-        cprintf("[CPU %d] Switching to task with PID %d Next RIP:%p\n", this_cpu->cpu_id, next_task->task_pid,
-            next_task->task_frame.rip);
+        // cprintf("[CPU %d] Switching to task with PID %d Next RIP:%p\n", this_cpu->cpu_id, next_task->task_pid,
+            // next_task->task_frame.rip);
         task_run(next_task);
     }
 

@@ -257,26 +257,26 @@ void int_handler(struct int_frame *frame)
 {
 	/* The task may have set DF and some versions of GCC rely on DF being
 	 * clear. */
-	//lapic_timer_off();
+	lapic_timer_off();
 	asm volatile("cld" ::: "cc");
 	/* Check if interrupts are disabled.
 	 * If this assertion fails, DO NOT be tempted to fix it by inserting a
 	 * "cli" in the interrupt path.
 	 */
-	 if (big_spin_haslock(&kernel_lock)) {
-		 int is_kernel_interrupted = (frame->cs & 3) == 0;
-		 if (is_kernel_interrupted) {
-			 cprintf("Kernel interrupt with kernel lock held!\n");
-			 print_int_frame(frame);
+	/* if (big_spin_haslock(&kernel_lock)) {
+		int is_kernel_interrupted = (frame->cs & 3) == 0;
+		if (is_kernel_interrupted) {
+			cprintf("Kernel interrupt with kernel lock held!\n");
+			print_int_frame(frame);
 			} else {
 				cprintf("User interrupt with kernel lock held!\n");
 				print_int_frame(frame);
 			}
 			panic("Interrupt with kernel lock held!");
-		}
+	} */
 		
 	big_spin_lock(&kernel_lock);
-	cprintf("INT handler on core %d, INT_NUM=%d\n", this_cpu->cpu_id, frame->int_no);
+	//cprintf("INT handler on core %d, INT_NUM=%d\n", this_cpu->cpu_id, frame->int_no);
 
 	assert(!(read_rflags() & FLAGS_IF));
 	/* cprintf("Incoming INT frame at %p\n", frame); */

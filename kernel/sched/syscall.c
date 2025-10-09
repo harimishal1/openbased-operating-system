@@ -1,6 +1,7 @@
 
 #include "syscall.h"
 #include "kernel/sched/task.h"
+#include "stdio.h"
 #include "task.h"
 #include "types.h"
 #include "x86-64/types.h"
@@ -64,6 +65,7 @@ static int sys_cgetc(void)
 /* Returns the PID of the current task. */
 static pid_t sys_getpid(void)
 {
+	//cprintf("In getpid, cur_task pid is %d\n", cur_task->task_pid);
 	return cur_task->task_pid;
 }
 
@@ -127,6 +129,7 @@ int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 	if ((unsigned)syscallno >= NSYSCALLS) {
 		return -ENOSYS;
 	}
+	//cprintf("syscall: syscallno %d\n", (int)syscallno);
 
 	switch (syscallno) {
 		case SYS_cputs:

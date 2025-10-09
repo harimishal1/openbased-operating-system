@@ -14,19 +14,18 @@
 pid_t sys_wait(int *rstatus)
 {
 	/* LAB 5: your code here. */
+    //cprintf("In waitpid with pid lll\n");
+
     struct list *node;
     struct task *child;
 
     if (list_is_empty(&cur_task->task_children) && list_is_empty(&cur_task->task_zombies)) {
         return -ECHILD; 
     }
-
-    cur_task->task_wait = NULL;
-    cur_task->task_status = TASK_NOT_RUNNABLE;
-
+    
     list_foreach(&cur_task->task_zombies, node) {
         child = container_of(node, struct task, task_node);
-
+        
         if (rstatus) {
             *rstatus = child->task_exit_status;
         }
@@ -35,11 +34,14 @@ pid_t sys_wait(int *rstatus)
         list_del(&child->task_child);
         cprintf("[PID %5u] Reaping task with PID %d \n",
             cur_task->task_pid, child->task_pid);
-        task_free(child);
-        return return_pid;
+            task_free(child);
+            return return_pid;
     }
-
+        
+    cur_task->task_wait = NULL;
+    cur_task->task_status = TASK_NOT_RUNNABLE;
     cur_task->task_wait_exit_status = rstatus;
+    cur_task = NULL;
     sched_yield();
     panic("SHOULDNT BE HERE");
     return sys_wait(rstatus);
@@ -48,6 +50,7 @@ pid_t sys_wait(int *rstatus)
 pid_t sys_waitpid(pid_t pid, int *rstatus, int opts)
 {
 	/* LAB 5: your code here. */
+    //cprintf("In waitpid with pid %d\n", pid);
     struct list *node;
     struct task *child;
 
@@ -66,9 +69,7 @@ pid_t sys_waitpid(pid_t pid, int *rstatus, int opts)
     if (child == cur_task) {
         return -ECHILD;
     }
-    cur_task->task_wait = child;
-    cur_task->task_status = TASK_NOT_RUNNABLE;
-
+    
     list_foreach(&cur_task->task_zombies, node) {
         child = container_of(node, struct task, task_node);
         if (child->task_pid == pid) {
@@ -78,13 +79,17 @@ pid_t sys_waitpid(pid_t pid, int *rstatus, int opts)
             list_del(&child->task_node);
             list_del(&child->task_child);
             cprintf("[PID %5u] Reaping task with PID %d\n",
-            cur_task->task_pid, child->task_pid);
-            task_free(child);
-            
-            return pid;
+                cur_task->task_pid, child->task_pid);
+                task_free(child);
+                
+                return pid;
+            }
         }
-    }
+
+    cur_task->task_wait = child;
+    cur_task->task_status = TASK_NOT_RUNNABLE;
     cur_task->task_wait_exit_status = rstatus;
+    //cur_task = NULL;
     sched_yield();
     panic("SHOULDNT BE HERE");
 

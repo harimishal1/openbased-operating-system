@@ -194,7 +194,7 @@ void mem_init_mp(void)
 		if (cpu == boot_cpu) {
 			cprintf("[SMP] CPU %d kernel stack: [%p - %p])\n",
                 idx,
-                (void *)cpu->cpu_tss.rsp[0], cpu->cpu_tss.rsp[0] + KSTACK_SIZE);
+                (void *)cpu->cpu_tss.rsp[0], cpu->cpu_tss.rsp[0] - KSTACK_SIZE);
             continue;
         }
 		uintptr_t stack_top = KSTACK_TOP - (idx + 1) * (KSTACK_SIZE + KSTACK_GAP);
