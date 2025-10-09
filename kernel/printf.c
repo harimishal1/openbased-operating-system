@@ -36,13 +36,17 @@ int cprintf(const char *fmt, ...)
 	va_list ap;
 	int cnt;
 
-	fine_spin_lock(&console_lock);
+	if (!fine_spin_haslock(&console_lock)) {
+		fine_spin_lock(&console_lock);
+	}
 
 	va_start(ap, fmt);
 	cnt = vcprintf(fmt, ap);
 	va_end(ap);
 
-	fine_spin_unlock(&console_lock);
+	if (fine_spin_haslock(&console_lock)) {
+		fine_spin_unlock(&console_lock);
+	}
 
 	return cnt;
 }
