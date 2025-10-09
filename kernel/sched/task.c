@@ -3,6 +3,7 @@
 #include "elf.h"
 #include "kernel/mem/buddy.h"
 #include "kernel/mem/init.h"
+#include "kernel/mem/kmem.h"
 #include "kernel/mem/protect.h"
 #include "kernel/sched/idt.h"
 #include "kernel/sched/sched.h"
@@ -31,7 +32,7 @@
 #include <kernel/sched.h>
 
 
-
+extern struct spinlock kernel_lock;
 extern struct list runq;
 extern int check_user_vma_range(uintptr_t *fault_va, struct task *task, void *base, size_t size, int flags);
 
@@ -321,6 +322,87 @@ void task_create(uint8_t *binary, enum task_type type)
 	return;
 }
 
+void kthread_create(enum task_type type)
+{
+	/* LAB 5: modify your code here. */
+	/* LAB 3: your code here. */
+	struct task *kthread = kmalloc(sizeof (*kthread));
+	if (!kthread) {
+		panic("couldnt allocate task");
+	}
+
+	kthread->task_type = TASK_TYPE_KERNEL;
+
+	pid_t pid;
+    for (pid = 1; pid < pid_max; ++pid) {
+        if (!tasks[pid]) { 
+			tasks[pid] = kthread; kthread->task_pid = pid; 
+			break; 
+		}
+    }
+
+    if (pid == pid_max) 
+		{ kfree(kthread); 
+			panic("Max PIDs reached"); 
+		}
+
+    rb_init(&kthread->task_rb);
+    list_init(&kthread->task_mmap);
+    list_init(&kthread->task_children);
+    list_init(&kthread->task_zombies);
+    list_init(&kthread->task_node);
+    list_init(&kthread->task_child);
+
+    kthread->task_wait = NULL;
+    kthread->task_wait_exit_status = NULL;
+
+	kthread->task_pml4 = kernel_pml4;
+    kthread->task_type = type;
+    kthread->task_status = TASK_RUNNABLE;
+    kthread->task_runs = 0;
+    kthread->task_ppid = 0;	
+	kthread->task_cpunum = lapic_cpunum();
+    kthread->task_exit_status = 0;
+
+	rb_init(&kthread->task_rb);
+	list_init(&kthread->task_mmap);
+	list_init(&kthread->task_children);
+	list_init(&kthread->task_zombies);
+	list_init(&kthread->task_node);
+	kthread->task_wait = NULL;
+	kthread->task_wait_exit_status = NULL;
+
+	struct page_info *page = page_alloc(ALLOC_ZERO);
+    if (!page) {
+		panic("Couldnt allocate page for kthread stack");
+	}
+    ++page->pp_ref;
+
+	void *kthread_stack = page2kva(page);
+	if (!kthread_stack) { 
+		panic("Couldnt get kva for kthread stack");
+	}
+
+	kthread->task_pml4 = kernel_pml4;
+
+	memset(&kthread->task_frame, 0, sizeof (kthread->task_frame));
+    kthread->task_frame.cs     = GDT_KCODE;
+    kthread->task_frame.ss     = GDT_KDATA;
+    kthread->task_frame.ds     = GDT_KDATA;
+    kthread->task_frame.rflags = FLAGS_IF | 0x2;
+	kthread->task_frame.rsp    = (uint64_t)kthread_stack + PAGE_SIZE;
+
+
+	/* fine_spin_lock(&runq_lock);
+    list_add_tail(&runq, &task->task_node);
+    fine_spin_unlock(&runq_lock); */
+	//add to global runq
+	
+	cprintf("[PID %5u] New kernel thread with PID %u\n",
+            cur_task ? cur_task->task_pid : 0, kthread->task_pid);
+	return;
+}
+
 /* Free the task and all of the memory that is used by it.
  */
 void task_free(struct task *task)
@@ -339,9 +421,23 @@ void task_free(struct task *task)
 
 	if (task->task_ppid != 0) {
 		struct task *parent = pid2task(task->task_ppid, 0);
+		if (task->task_pid == 2) {
+			// print parent infoif it is readyor print it is null
+			if (parent) {
+				cprintf("Parent of 2 is %d and its status is %d\n", parent->task_pid, parent->task_status);
+				// print task_wait
+				if (parent->task_wait) {
+					cprintf("Parent is waiting for pid %d\n", parent->task_wait->task_pid);
+				} else {
+					cprintf("Parent is not waiting for any child\n");
+				}
+			} else {
+				cprintf("Parent of 2 is NULL\n");
+			}
+		}
 		if (parent) {
-			if (parent->task_status == TASK_NOT_RUNNABLE && 
-				(parent->task_wait == NULL || parent->task_wait == task)) {
+			if ((parent->task_status == TASK_NOT_RUNNABLE) && // hari - maybe change parent->task_wait to set parent later
+				((parent->task_wait == NULL )|| parent->task_wait == task)) {
 				if (parent->task_wait_exit_status) {
 					struct page_table *old_pml4 = KADDR(read_cr3());
 					load_pml4((struct page_table *)PADDR(parent->task_pml4));
@@ -355,9 +451,12 @@ void task_free(struct task *task)
 				// list_add_tail(&runq, &parent->task_node);
 				list_add(&this_cpu->runq, &parent->task_node);
 			} else {
+				//if task is runnable, we need to do something
 				// cur task is child, dying
 				// parent is not waiting for me
-				
+				cprintf("task pid is %d and parent pid is %d\n", task->task_pid, parent->task_pid);
+				parent->task_wait = NULL;
+
 				list_del(&task->task_node);
 				list_del(&task->task_child);
 				list_add_tail(&parent->task_zombies, &task->task_node);

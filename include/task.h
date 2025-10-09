@@ -28,6 +28,7 @@ enum {
 /* Special task types. */
 enum task_type {
 	TASK_TYPE_USER = 0,
+	TASK_TYPE_KERNEL = 1,
 };
 
 struct task {

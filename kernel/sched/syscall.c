@@ -81,13 +81,16 @@ static int sys_kill(pid_t pid)
 		return -1;
 	}
 
-	//struct task *parent = pid2task(task->task_ppid, 0);
-	//list_add_tail(&parent->task_zombies, &task->task_node);
-	
 	task->task_status = TASK_DYING;
+	struct task *parent = pid2task(task->task_ppid, 0);
+	if (parent) {
+		list_del(&task->task_node);
+        list_del(&task->task_child); 
+        list_add_tail(&parent->task_zombies, &task->task_node);
+    }
+	
 	cprintf("[PID %5u] Exiting gracefully\n", task->task_pid);
-	task_free(task);
-
+	//task_free(task);
 	return 0;
 }
 

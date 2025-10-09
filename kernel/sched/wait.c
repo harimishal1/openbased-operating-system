@@ -31,7 +31,7 @@ pid_t sys_wait(int *rstatus)
         }
         pid_t return_pid = child->task_pid;
         list_del(&child->task_node);
-        list_del(&child->task_child);
+        //list_del(&child->task_child);
         cprintf("[PID %5u] Reaping task with PID %d \n",
             cur_task->task_pid, child->task_pid);
             task_free(child);
