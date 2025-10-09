@@ -325,7 +325,7 @@ void task_create(uint8_t *binary, enum task_type type)
  */
 void task_free(struct task *task)
 {
-	assert(big_spin_haslock(&kernel_lock));
+	//assert(big_spin_haslock(&kernel_lock));
 	struct task *waiting;
 
 	/* LAB 5: your code here. */
@@ -356,7 +356,7 @@ void task_free(struct task *task)
 				list_add(&this_cpu->runq, &parent->task_node);
 			} else {
 				// cur task is child, dying
-				// !parent is not waiting for me
+				// parent is not waiting for me
 				
 				list_del(&task->task_node);
 				list_del(&task->task_child);

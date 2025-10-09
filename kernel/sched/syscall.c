@@ -1,6 +1,7 @@
 
 #include "syscall.h"
 #include "kernel/sched/task.h"
+#include "list.h"
 #include "stdio.h"
 #include "task.h"
 #include "types.h"
@@ -80,10 +81,12 @@ static int sys_kill(pid_t pid)
 		return -1;
 	}
 
+	//struct task *parent = pid2task(task->task_ppid, 0);
+	//list_add_tail(&parent->task_zombies, &task->task_node);
+	
 	task->task_status = TASK_DYING;
-
 	cprintf("[PID %5u] Exiting gracefully\n", task->task_pid);
-	//task_destroy(task);
+	task_free(task);
 
 	return 0;
 }
