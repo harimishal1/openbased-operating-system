@@ -18,6 +18,9 @@
 #include <kernel/mem.h>
 
 extern struct list buddy_free_list[];
+struct list zeroq;
+extern void kthread_create(void (*entry)(struct page_info *page), void *arg);
+extern void zero_page_daemon(struct page_info *page);
 
 /* The kernel's initial PML4. */
 struct page_table *kernel_pml4;
@@ -157,6 +160,9 @@ void mem_init(struct boot_info *boot_info)
 	 */
 	page_init(boot_info);
 
+	/* Initialize the zero page list. */	
+	list_init(&zeroq);
+	//kthread_create(zero_page_daemon, NULL);
 	
 	/* Setup the initial PML4 for the kernel. */
 	pml4_setup(boot_info);
