@@ -484,6 +484,20 @@ void task_free(struct task *task)
 
 	if (task->task_ppid != 0) {
 		struct task *parent = pid2task(task->task_ppid, 0);
+		if (task->task_pid == 2) {
+			// print parent infoif it is readyor print it is null
+			if (parent) {
+				cprintf("Parent of 2 is %d and its status is %d\n", parent->task_pid, parent->task_status);
+				// print task_wait
+				if (parent->task_wait) {
+					cprintf("Parent is waiting for pid %d\n", parent->task_wait->task_pid);
+				} else {
+					cprintf("Parent is not waiting for any child\n");
+				}
+			} else {
+				cprintf("Parent of 2 is NULL\n");
+			}
+		}
 		if (parent) {
 			if ((parent->task_status == TASK_NOT_RUNNABLE) && // hari - maybe change parent->task_wait to set parent later
 				((parent->task_wait == NULL )|| parent->task_wait == task)) {
@@ -499,7 +513,8 @@ void task_free(struct task *task)
 				list_del(&task->task_child);
 				// list_add_tail(&runq, &parent->task_node);
 				list_add(&this_cpu->runq, &parent->task_node);
-			} else {
+			} else if (task == cur_task){
+
 				list_del(&task->task_node);
 				list_del(&task->task_child);
 				list_add_tail(&parent->task_zombies, &task->task_node);
@@ -519,6 +534,7 @@ void task_free(struct task *task)
 	
 	list_foreach_safe(&task->task_zombies, node, next) {
 		child = container_of(node, struct task, task_node);
+		cprintf("DEBUG: task_free: Parent %d about to clean up zombie %d\n", task->task_pid, child->task_pid);
 	    list_del(&child->task_node);
 		child->task_ppid = 0;
 	    task_free(child);
