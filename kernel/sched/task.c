@@ -198,6 +198,10 @@ struct task *task_alloc(pid_t ppid)
 	task->task_frame.cs = GDT_UCODE | 3;
 	task->task_frame.rflags = FLAGS_IF | 0x2;
 
+	task->task_time_budget = TIMESLICE;
+	task->last_time_stamp = read_tsc();
+
+
 
 	/* You will set task->task_frame.rip later. */
 	cprintf("[PID %5u] New task with PID %u\n",
@@ -442,12 +446,20 @@ void kthread_create(void (*entry)(void *), void *arg)
 	kthread->task_frame.rsp    = (uint64_t)stack_top;
 	kthread->task_frame.rip    = (uint64_t)entry; 
 
+	kthread->task_time_budget = TIMESLICE;
+	kthread->last_time_stamp = read_tsc();
+
+
+
+	/* fine_spin_lock(&runq_lock);
+    list_add_tail(&runq, &task->task_node);
+    fine_spin_unlock(&runq_lock); */
+	//add to global runq
 	/* fine_spin_lock(&runq_lock);
 		list_add(&this_cpu->runq, &cur_task->task_node);
     fine_spin_unlock(&runq_lock); */
 	
     list_add(&this_cpu->runq, &kthread->task_node);
-	
 	cprintf("[PID %5u] New kernel thread with PID %u\n",
             cur_task ? cur_task->task_pid : 0, kthread->task_pid);
 			cprintf("Daemon [PID %u] created, task_node at %p\n", kthread->task_pid, &kthread->task_node);
