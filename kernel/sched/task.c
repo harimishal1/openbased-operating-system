@@ -346,30 +346,27 @@ void task_create(uint8_t *binary, enum task_type type)
 
 void zero_page_daemon(void *arg)
 {	
-    //lapic_timer_off();
-	while (1) {
-		if(!fine_spin_haslock(&zeroq_lock)){
-			fine_spin_lock(&zeroq_lock);
-		}
-        //fine_spin_lock(&zeroq_lock);
-        if (list_is_empty(&zeroq)) {
-            fine_spin_unlock(&zeroq_lock);
-			if (!fine_spin_haslock(&runq_lock)) {
-				fine_spin_lock(&runq_lock);
-			}
-    		list_add(&runq, &cur_task->task_node);
-			cprintf("Daemon [PID %u] is yielding.\n", cur_task->task_pid);
-    		fine_spin_unlock(&runq_lock);
-            sched_yield();
-        }
-        struct page_info *page = container_of(list_pop_tail(&zeroq), struct page_info, pp_node);
-		if(fine_spin_haslock(&zeroq_lock)){
-			fine_spin_unlock(&zeroq_lock);
-		}
-		//fine_spin_unlock(&zeroq_lock);
-        memset(page2kva(page), 0, PAGE_SIZE);
-        page_free(page);
-    }
+	lapic_timer_off();
+	if(!big_spin_haslock(&kernel_lock)) {
+		big_spin_lock(&kernel_lock);
+	}
+	int freed_pages = 0;
+	fine_spin_lock(&zeroq_lock);
+	while (!list_is_empty(&zeroq) && freed_pages < 10) {
+		struct list *node = list_pop_tail(&zeroq);
+		struct page_info *pp = container_of(node, struct page_info, pp_node);
+		memset(page2kva(pp), 0, PAGE_SIZE);
+		list_del(&pp->pp_node);
+		page_free(pp);
+		freed_pages++;
+	}
+	list_init(&zeroq);
+	fine_spin_unlock(&zeroq_lock);
+
+	cur_task->task_status = TASK_RUNNABLE;
+	list_add(&this_cpu->runq, &cur_task->task_node);
+	cur_task = NULL;
+	sched_yield();
 }
 
 void kthread_create(void (*entry)(void *), void *arg)

@@ -302,7 +302,6 @@ void page_free(struct page_info *pp)
    	pp = buddy_merge(pp);
 	pp->pp_free = 1;
 	list_add_tail(&buddy_free_list[pp->pp_order], &pp->pp_node);
-
 	fine_spin_unlock(&buddy_lock);
 }
 
@@ -310,15 +309,15 @@ void page_free(struct page_info *pp)
  * Decrement the reference count on a page, freeing it if there
  * are no more refs.
  */
-/* void page_decref(struct page_info *pp)
+void page_decref(struct page_info *pp)
 {
 	assert(pp->pp_ref > 0);
 	if (--pp->pp_ref == 0) {
 		page_free(pp);
 	}
-} */
+}
 
-void page_decref(struct page_info *pp)
+/* void page_decref(struct page_info *pp)
 {
     assert(pp->pp_ref > 0);
     if (--pp->pp_ref == 0) {
@@ -326,7 +325,7 @@ void page_decref(struct page_info *pp)
         list_add(&zeroq, &pp->pp_node);
         fine_spin_unlock(&zeroq_lock);
     }
-}
+} */
 
 static int in_page_range(void *p)
 {
