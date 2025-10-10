@@ -15,6 +15,10 @@
 /* Physical page metadata. */
 size_t npages;
 struct page_info *pages;
+extern struct list zeroq;
+extern size_t nkernel_task;
+extern struct spinlock zeroq_lock;
+extern void zero_page_daemon(struct page_info *page);
 
 /*
  * List of free buddy chunks (often also referred to as buddy pages or simply
@@ -306,13 +310,28 @@ void page_free(struct page_info *pp)
  * Decrement the reference count on a page, freeing it if there
  * are no more refs.
  */
-void page_decref(struct page_info *pp)
+/* void page_decref(struct page_info *pp)
 {
 	assert(pp->pp_ref > 0);
 	if (--pp->pp_ref == 0) {
 		page_free(pp);
 	}
+} */
+
+void page_decref(struct page_info *pp)
+{
+    assert(pp->pp_ref > 0);
+    if (--pp->pp_ref == 0) {
+		//cprintf("gets here\n");
+		if(!fine_spin_haslock(&zeroq_lock)){
+			fine_spin_lock(&zeroq_lock);
+			list_add(&zeroq, &pp->pp_node);
+			fine_spin_unlock(&zeroq_lock);
+			//page_free(pp);
+		}
+    }
 }
+
 static int in_page_range(void *p)
 {
 	return ((uintptr_t)pages <= (uintptr_t)p &&
