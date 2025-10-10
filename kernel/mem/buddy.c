@@ -322,13 +322,9 @@ void page_decref(struct page_info *pp)
 {
     assert(pp->pp_ref > 0);
     if (--pp->pp_ref == 0) {
-		//cprintf("gets here\n");
-		if(!fine_spin_haslock(&zeroq_lock)){
-			fine_spin_lock(&zeroq_lock);
-			list_add(&zeroq, &pp->pp_node);
-			fine_spin_unlock(&zeroq_lock);
-			//page_free(pp);
-		}
+        fine_spin_lock(&zeroq_lock);
+        list_add(&zeroq, &pp->pp_node);
+        fine_spin_unlock(&zeroq_lock);
     }
 }
 

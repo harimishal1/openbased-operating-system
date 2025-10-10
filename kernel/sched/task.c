@@ -354,7 +354,9 @@ void zero_page_daemon(void *arg)
         //fine_spin_lock(&zeroq_lock);
         if (list_is_empty(&zeroq)) {
             fine_spin_unlock(&zeroq_lock);
-			fine_spin_lock(&runq_lock);
+			if (!fine_spin_haslock(&runq_lock)) {
+				fine_spin_lock(&runq_lock);
+			}
     		list_add(&runq, &cur_task->task_node);
 			cprintf("Daemon [PID %u] is yielding.\n", cur_task->task_pid);
     		fine_spin_unlock(&runq_lock);
