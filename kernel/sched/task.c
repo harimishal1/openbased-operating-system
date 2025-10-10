@@ -33,12 +33,29 @@
 
 
 extern struct spinlock kernel_lock;
+extern struct spinlock runq_lock;
 extern struct list runq;
+extern struct list zeroq;
+
+struct spinlock zeroq_lock = {
+#ifdef DEBUG_SPINLOCK
+	.name = "zeroq_lock",
+#endif
+};
+
+struct spinlock kthread_lock = {
+#ifdef DEBUG_SPINLOCK
+	.name = "kthread_lock",
+#endif
+};
+
 extern int check_user_vma_range(uintptr_t *fault_va, struct task *task, void *base, size_t size, int flags);
 
 pid_t pid_max = 1 << 16;
 struct task **tasks = (struct task **)PIDMAP_BASE;
 size_t nuser_tasks = 0;
+size_t nkernel_tasks = 0;
+
 
 /* Looks up the respective task for a given PID.
  * If check_perm is non-zero, this function checks if the PID maps to the
@@ -322,84 +339,122 @@ void task_create(uint8_t *binary, enum task_type type)
 	return;
 }
 
-void kthread_create(enum task_type type)
+void zero_page_daemon(void *arg)
+{	
+	lapic_timer_off();
+	if(!big_spin_haslock(&kernel_lock)) {
+		big_spin_lock(&kernel_lock);
+	}
+	int freed_pages = 0;
+	fine_spin_lock(&zeroq_lock);
+	while (!list_is_empty(&zeroq) && freed_pages < 10) {
+		struct list *node = list_pop_tail(&zeroq);
+		struct page_info *pp = container_of(node, struct page_info, pp_node);
+		memset(page2kva(pp), 0, PAGE_SIZE);
+		list_del(&pp->pp_node);
+		page_free(pp);
+		freed_pages++;
+	}
+	list_init(&zeroq);
+	fine_spin_unlock(&zeroq_lock);
+
+	cur_task->task_status = TASK_RUNNABLE;
+	list_add(&this_cpu->runq, &cur_task->task_node);
+	cur_task = NULL;
+	sched_yield();
+}
+
+void kthread_create(void (*entry)(void *), void *arg)
 {
-	/* LAB 5: modify your code here. */
-	/* LAB 3: your code here. */
-	struct task *kthread = kmalloc(sizeof (*kthread));
+	/* LAB 6: your code here. */
+	fine_spin_lock(&kthread_lock);
+	struct task *kthread = kmalloc(sizeof(struct task));
 	if (!kthread) {
 		panic("couldnt allocate task");
 	}
 
+	/* struct task *kthread = page2kva(page_alloc(ALLOC_ZERO));
+	if (!kthread) {
+		panic("couldnt allocate task");
+	}  */
+	
 	kthread->task_type = TASK_TYPE_KERNEL;
-
+	
+	/*Add to PID map */
 	pid_t pid;
     for (pid = 1; pid < pid_max; ++pid) {
-        if (!tasks[pid]) { 
+		if (!tasks[pid]) { 
 			tasks[pid] = kthread; kthread->task_pid = pid; 
 			break; 
 		}
     }
-
+	
+	/* We are out of PIDs. */
     if (pid == pid_max) 
-		{ kfree(kthread); 
-			panic("Max PIDs reached"); 
-		}
-
-    rb_init(&kthread->task_rb);
-    list_init(&kthread->task_mmap);
-    list_init(&kthread->task_children);
-    list_init(&kthread->task_zombies);
-    list_init(&kthread->task_node);
-    list_init(&kthread->task_child);
-
-    kthread->task_wait = NULL;
-    kthread->task_wait_exit_status = NULL;
-
+	{ kfree(kthread); 
+		panic("Max PIDs reached"); 
+	}
+	nkernel_tasks++;
+	size_t nkernel_number = nkernel_tasks + 1;
+	
+	/*Initialize task struct */	
 	kthread->task_pml4 = kernel_pml4;
-    kthread->task_type = type;
+    kthread->task_type = TASK_TYPE_KERNEL;
     kthread->task_status = TASK_RUNNABLE;
     kthread->task_runs = 0;
     kthread->task_ppid = 0;	
 	kthread->task_cpunum = lapic_cpunum();
     kthread->task_exit_status = 0;
 
+	/* Setting up the kernel thread's lists and rb tree */
 	rb_init(&kthread->task_rb);
 	list_init(&kthread->task_mmap);
 	list_init(&kthread->task_children);
 	list_init(&kthread->task_zombies);
 	list_init(&kthread->task_node);
+	list_init(&kthread->task_child);
 	kthread->task_wait = NULL;
 	kthread->task_wait_exit_status = NULL;
+
+	/* Setting up the kernel_thread */
+	uintptr_t stack_top = KSTACK_TOP + (nkernel_number) * (PAGE_SIZE);
+    uintptr_t stack_bottom = stack_top - PAGE_SIZE;
 
 	struct page_info *page = page_alloc(ALLOC_ZERO);
     if (!page) {
 		panic("Couldnt allocate page for kthread stack");
 	}
-    ++page->pp_ref;
+	page_insert(kernel_pml4, page, (void *)(stack_bottom), PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
 
 	void *kthread_stack = page2kva(page);
 	if (!kthread_stack) { 
 		panic("Couldnt get kva for kthread stack");
 	}
 
-	kthread->task_pml4 = kernel_pml4;
-
-	memset(&kthread->task_frame, 0, sizeof (kthread->task_frame));
+	memset(&kthread->task_frame, 0, sizeof(kthread->task_frame));
     kthread->task_frame.cs     = GDT_KCODE;
     kthread->task_frame.ss     = GDT_KDATA;
     kthread->task_frame.ds     = GDT_KDATA;
     kthread->task_frame.rflags = FLAGS_IF | 0x2;
-	kthread->task_frame.rsp    = (uint64_t)kthread_stack + PAGE_SIZE;
+	kthread->task_frame.rdi    = (uint64_t)arg;
+	kthread->task_frame.rsp    = (uint64_t)stack_top;
+	kthread->task_frame.rip    = (uint64_t)entry; 
+
 
 
 	/* fine_spin_lock(&runq_lock);
     list_add_tail(&runq, &task->task_node);
     fine_spin_unlock(&runq_lock); */
 	//add to global runq
+	/* fine_spin_lock(&runq_lock);
+		list_add(&this_cpu->runq, &cur_task->task_node);
+    fine_spin_unlock(&runq_lock); */
 	
+    list_add(&this_cpu->runq, &kthread->task_node);
 	cprintf("[PID %5u] New kernel thread with PID %u\n",
             cur_task ? cur_task->task_pid : 0, kthread->task_pid);
+			cprintf("Daemon [PID %u] created, task_node at %p\n", kthread->task_pid, &kthread->task_node);
+	fine_spin_unlock(&kthread_lock);
 	return;
 }
 

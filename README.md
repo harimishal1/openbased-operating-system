@@ -1,3 +1,14 @@
+## Lab 6 kernel threads
+
+The zero-page daemon is a background kernel thread that zeroes and frees physical pages to maintain clean and ready to use memory. 
+The function is defined at task.c:342.
+
+It runs non-preemptively by disabling the LAPIC timer, acquires the kernel lock for safety, and processes up to ten pages from the global zeroq list at a time. For each page, it clears its contents with memset, frees it back to the buddy allocator, and then yields control to the scheduler. 
+
+The daemon itself is created using kthread_create (task.c:367), which allocates and initializes a kernel task thread, assigns it a PID, sets up a one-page stack, configures its CPU frame (entry point, stack pointer, argument, and segment selectors), and adds it to the per-CPU run queue. 
+
+The daemon runs asynchronously and goes through the zeroq list when it is scheduled back in. The zeroq list itself is updated inside the page_decref function every time it is called. 
+
 ## Implemented bonus features
 
 ### Invalid Free Detection

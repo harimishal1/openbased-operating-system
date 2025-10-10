@@ -21,6 +21,9 @@
 #include <kernel/test/test.h>
 #include <kernel/symbols.h>
 
+extern void kthread_create(void (*entry)(struct page_info *page), void *arg);
+extern void zero_page_daemon(struct page_info *page);
+extern struct spinlock runq_lock;
 extern struct spinlock kernel_lock;
 
 uint8_t *find_user_binary() {
@@ -113,6 +116,7 @@ void kmain(struct boot_info *boot_info)
 	// big_spin_lock(&kernel_lock);
 	task_create(binary, TASK_TYPE_USER);
 	boot_cpus();
+	//kthread_create(zero_page_daemon, NULL);
 	big_spin_lock(&kernel_lock);
 	
 	sched_yield();
