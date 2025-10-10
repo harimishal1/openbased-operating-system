@@ -80,16 +80,18 @@ static int sys_kill(pid_t pid)
 	if (!task) {
 		return -1;
 	}
+	cprintf("DEBUG: sys_kill called for PID %d\n", pid); // <-- ADD THIS
+    cprintf("DEBUG: Set PID %d exit_status to %d\n", pid, task->task_exit_status);
 
 	task->task_status = TASK_DYING;
 	struct task *parent = pid2task(task->task_ppid, 0);
 	if (parent) {
-		list_del(&task->task_node);
+		//list_del(&task->task_node);
         list_del(&task->task_child); 
         list_add_tail(&parent->task_zombies, &task->task_node);
     }
 	
-	cprintf("[PID %5u] Exiting gracefully\n", task->task_pid);
+	//cprintf("[PID %5u] Exiting gracefully\n", task->task_pid);
 	//task_free(task);
 	return 0;
 }

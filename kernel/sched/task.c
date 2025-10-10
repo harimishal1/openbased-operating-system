@@ -3,6 +3,7 @@
 #include "elf.h"
 #include "kernel/mem/buddy.h"
 #include "kernel/mem/init.h"
+#include "kernel/mem/insert.h"
 #include "kernel/mem/kmem.h"
 #include "kernel/mem/protect.h"
 #include "kernel/sched/idt.h"
@@ -33,12 +34,14 @@
 
 
 extern struct spinlock kernel_lock;
+extern struct spinlock runq_lock;
 extern struct list runq;
 extern int check_user_vma_range(uintptr_t *fault_va, struct task *task, void *base, size_t size, int flags);
 
 pid_t pid_max = 1 << 16;
 struct task **tasks = (struct task **)PIDMAP_BASE;
 size_t nuser_tasks = 0;
+size_t nkernel_tasks = 0;
 
 /* Looks up the respective task for a given PID.
  * If check_perm is non-zero, this function checks if the PID maps to the
@@ -326,10 +329,19 @@ void task_create(uint8_t *binary, enum task_type type)
 	return;
 }
 
-void kthread_create(enum task_type type)
+void zero_page_thread(struct page_info page)
 {
-	/* LAB 5: modify your code here. */
-	/* LAB 3: your code here. */
+	fine_spin_lock(&runq_lock);
+	memset(page2kva(&page), 0, PAGE_SIZE);
+	page_decref(&page);
+	fine_spin_unlock(&runq_lock);
+	return;
+}
+
+
+void kthread_create(void (*entry)(void))
+{
+	/* LAB 6: your code here. */
 	struct task *kthread = kmalloc(sizeof (*kthread));
 	if (!kthread) {
 		panic("couldnt allocate task");
@@ -350,18 +362,8 @@ void kthread_create(enum task_type type)
 			panic("Max PIDs reached"); 
 		}
 
-    rb_init(&kthread->task_rb);
-    list_init(&kthread->task_mmap);
-    list_init(&kthread->task_children);
-    list_init(&kthread->task_zombies);
-    list_init(&kthread->task_node);
-    list_init(&kthread->task_child);
-
-    kthread->task_wait = NULL;
-    kthread->task_wait_exit_status = NULL;
-
 	kthread->task_pml4 = kernel_pml4;
-    kthread->task_type = type;
+    kthread->task_type = TASK_TYPE_KERNEL;
     kthread->task_status = TASK_RUNNABLE;
     kthread->task_runs = 0;
     kthread->task_ppid = 0;	
@@ -373,20 +375,26 @@ void kthread_create(enum task_type type)
 	list_init(&kthread->task_children);
 	list_init(&kthread->task_zombies);
 	list_init(&kthread->task_node);
+	list_init(&kthread->task_child);
+
 	kthread->task_wait = NULL;
 	kthread->task_wait_exit_status = NULL;
+	nkernel_tasks++;
+
+	uintptr_t stack_top = KSTACK_TOP + (nkernel_tasks + 1) * (KSTACK_SIZE + KSTACK_GAP);
+    uintptr_t stack_bottom = stack_top - KSTACK_SIZE;
+    uintptr_t guard_bottom = stack_bottom - KSTACK_GAP;
 
 	struct page_info *page = page_alloc(ALLOC_ZERO);
     if (!page) {
 		panic("Couldnt allocate page for kthread stack");
 	}
-    ++page->pp_ref;
+	page_insert(kernel_pml4, page, (void *)(stack_bottom), PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
 
 	void *kthread_stack = page2kva(page);
 	if (!kthread_stack) { 
 		panic("Couldnt get kva for kthread stack");
 	}
-
 	kthread->task_pml4 = kernel_pml4;
 
 	memset(&kthread->task_frame, 0, sizeof (kthread->task_frame));
@@ -395,6 +403,7 @@ void kthread_create(enum task_type type)
     kthread->task_frame.ds     = GDT_KDATA;
     kthread->task_frame.rflags = FLAGS_IF | 0x2;
 	kthread->task_frame.rsp    = (uint64_t)kthread_stack + PAGE_SIZE;
+	kthread->task_frame.rip    = (uint64_t)entry; 
 
 	kthread->task_time_budget = TIMESLICE;
 	kthread->last_time_stamp = read_tsc();
@@ -405,7 +414,9 @@ void kthread_create(enum task_type type)
     list_add_tail(&runq, &task->task_node);
     fine_spin_unlock(&runq_lock); */
 	//add to global runq
-	
+	fine_spin_lock(&runq_lock);
+    list_add_tail(&runq, &kthread->task_node);
+    fine_spin_unlock(&runq_lock);
 	cprintf("[PID %5u] New kernel thread with PID %u\n",
             cur_task ? cur_task->task_pid : 0, kthread->task_pid);
 	return;
@@ -458,12 +469,7 @@ void task_free(struct task *task)
 				list_del(&task->task_child);
 				// list_add_tail(&runq, &parent->task_node);
 				list_add(&this_cpu->runq, &parent->task_node);
-			} else {
-				//if task is runnable, we need to do something
-				// cur task is child, dying
-				// parent is not waiting for me
-				cprintf("task pid is %d and parent pid is %d\n", task->task_pid, parent->task_pid);
-				parent->task_wait = NULL;
+			} else if (task == cur_task){
 
 				list_del(&task->task_node);
 				list_del(&task->task_child);
@@ -484,6 +490,7 @@ void task_free(struct task *task)
 	
 	list_foreach_safe(&task->task_zombies, node, next) {
 		child = container_of(node, struct task, task_node);
+		cprintf("DEBUG: task_free: Parent %d about to clean up zombie %d\n", task->task_pid, child->task_pid);
 	    list_del(&child->task_node);
 		child->task_ppid = 0;
 	    task_free(child);
@@ -574,7 +581,9 @@ void task_run(struct task *task)
 	 */
 
 	/* LAB 3: Your code here. */
-
+if (cur_task != NULL && cur_task->task_status == TASK_RUNNING) {
+		cur_task->task_status = TASK_RUNNABLE;
+	}
 	cur_task = task;
 	cur_task->task_status = TASK_RUNNING;
 	cur_task->task_runs++;

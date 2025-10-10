@@ -237,7 +237,9 @@ void int_dispatch(struct int_frame *frame)
 			page_fault_handler(frame);
 			return;
 		case INT_SYSCALL:
+		 	//cprintf("DEBUG: int_dispatch for syscall %lld\n", frame->rax);
 			ret = syscall(frame->rax,frame->rdi,frame->rsi,frame->rdx,frame->rcx, frame->r8, frame->r9);
+			//cprintf("DEBUG: int_dispatch: syscall returned %lld. Setting frame->rax.\n", ret);
 			frame->rax = ret;
 			return;
 		case INT_GPF:

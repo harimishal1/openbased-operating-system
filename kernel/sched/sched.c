@@ -153,26 +153,6 @@ try_again:
     goto try_again;
 }
 
-   /*  if (cur_task && cur_task->task_status == TASK_RUNNING) {
-        cur_task->task_status = TASK_RUNNABLE;
-        list_add(&runq, &cur_task->task_node);
-    }
-    if (!list_is_empty(&runq)) {
-        next_task = container_of(list_pop_tail(&runq), struct task, task_node);
-    }
-
-    if (next_task && next_task->task_status == TASK_RUNNABLE) {
-        next_task->task_status = TASK_RUNNING;
-        // next_task->last_time_stamp = read_tsc();
-        // if (next_task->task_time_budget <= 0) {
-        //     next_task->task_time_budget = TIMESLICE;
-        // }
-        task_run(next_task);
-    }
-    cprintf("No runnable tasks in the system!\n");
-    sched_halt(); */
-
-
 /* For now jump into the kernel monitor. */
 void sched_halt()
 {
