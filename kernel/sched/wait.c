@@ -80,11 +80,11 @@ pid_t sys_waitpid(pid_t pid, int *rstatus, int opts)
             //list_del(&child->task_child);
             cprintf("[PID %5u] Reaping task with PID %d\n",
                 cur_task->task_pid, child->task_pid);
-                task_free(child);
+            task_free(child);
                 
-                return pid;
-            }
+            return pid;
         }
+    }
 
     cur_task->task_wait = child;
     cur_task->task_status = TASK_NOT_RUNNABLE;
