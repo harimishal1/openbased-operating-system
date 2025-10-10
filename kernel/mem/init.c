@@ -198,9 +198,9 @@ void mem_init_mp(void)
 		int idx = (int)(cpu - cpus);
 
 		if (cpu == boot_cpu) {
-			cprintf("[SMP] CPU %d kernel stack: [%p - %p])\n",
+			/* cprintf("[SMP] CPU %d kernel stack: [%p - %p])\n",
                 idx,
-                (void *)cpu->cpu_tss.rsp[0], cpu->cpu_tss.rsp[0] - KSTACK_SIZE);
+                (void *)cpu->cpu_tss.rsp[0], cpu->cpu_tss.rsp[0] - KSTACK_SIZE); */
             continue;
         }
 		uintptr_t stack_top = KSTACK_TOP - (idx + 1) * (KSTACK_SIZE + KSTACK_GAP);
@@ -218,10 +218,10 @@ void mem_init_mp(void)
         }
 
 		cpu->cpu_tss.rsp[0] = stack_top;
-        cprintf("[SMP] CPU %d kernel stack: [%p - %p), guard: [%p - %p)\n",
+        /* cprintf("[SMP] CPU %d kernel stack: [%p - %p), guard: [%p - %p)\n",
                 idx,
                 (void *)stack_bottom, (void *)stack_top,
-                (void *)guard_bottom, (void *)stack_bottom);
+                (void *)guard_bottom, (void *)stack_bottom); */
     }
 }
 

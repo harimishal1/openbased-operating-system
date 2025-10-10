@@ -36,7 +36,7 @@ void boot_cpus(void)
 	for (cpu = cpus; cpu < cpus + ncpus; ++cpu) {
 		/* Skip the boot CPU */
 		if (cpu == boot_cpu) {
-			cprintf("SMP: CPU %d starting\n", lapic_cpunum());
+			//cprintf("SMP: CPU %d starting\n", lapic_cpunum());
 			continue;
 		}
 

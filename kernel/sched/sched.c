@@ -99,7 +99,6 @@ try_again:
 
 	if (fine_spin_haslock(&runq_lock)) {
 		fine_spin_unlock(&runq_lock);
-		// goto try_again;
 	}
 	// Now own runq is empty so try taking some from the global or migrate
     if (fine_spin_trylock(&runq_lock) == 0) {

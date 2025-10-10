@@ -459,9 +459,8 @@ void kthread_create(void (*entry)(void *), void *arg)
     fine_spin_unlock(&runq_lock); */
 	
     list_add(&this_cpu->runq, &kthread->task_node);
-	cprintf("[PID %5u] New kernel thread with PID %u\n",
-            cur_task ? cur_task->task_pid : 0, kthread->task_pid);
-			cprintf("Daemon [PID %u] created, task_node at %p\n", kthread->task_pid, &kthread->task_node);
+	cprintf("[PID %5u] New kernel thread with PID %u\n", cur_task ? cur_task->task_pid : 0, kthread->task_pid);
+	cprintf("Daemon [PID %u] created, task_node at %p\n", kthread->task_pid, &kthread->task_node);
 	fine_spin_unlock(&kthread_lock);
 	return;
 }
@@ -484,7 +483,7 @@ void task_free(struct task *task)
 
 	if (task->task_ppid != 0) {
 		struct task *parent = pid2task(task->task_ppid, 0);
-		if (task->task_pid == 2) {
+		/* if (task->task_pid == 2) {
 			// print parent infoif it is readyor print it is null
 			if (parent) {
 				cprintf("Parent of 2 is %d and its status is %d\n", parent->task_pid, parent->task_status);
@@ -497,7 +496,7 @@ void task_free(struct task *task)
 			} else {
 				cprintf("Parent of 2 is NULL\n");
 			}
-		}
+		} */
 		if (parent) {
 			if ((parent->task_status == TASK_NOT_RUNNABLE) && // hari - maybe change parent->task_wait to set parent later
 				((parent->task_wait == NULL )|| parent->task_wait == task)) {
@@ -534,7 +533,6 @@ void task_free(struct task *task)
 	
 	list_foreach_safe(&task->task_zombies, node, next) {
 		child = container_of(node, struct task, task_node);
-		cprintf("DEBUG: task_free: Parent %d about to clean up zombie %d\n", task->task_pid, child->task_pid);
 	    list_del(&child->task_node);
 		child->task_ppid = 0;
 	    task_free(child);
