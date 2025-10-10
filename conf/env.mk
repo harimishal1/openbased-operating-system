@@ -44,7 +44,7 @@ TEST_PARALLEL = 1
 # This setting sets the number of cores available to OpenLSD. When
 # not provided, the default is 1. Changing this is only relevant
 # for lab 6, when doing multicore.
-CPUS = 1
+CPUS = 2
 
 # It is possible to change the port GDB listens on, but do note
 # that the default value has been hardcoded into the VS Code and

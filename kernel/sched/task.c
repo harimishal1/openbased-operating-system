@@ -3,6 +3,7 @@
 #include "elf.h"
 #include "kernel/mem/buddy.h"
 #include "kernel/mem/init.h"
+#include "kernel/mem/insert.h"
 #include "kernel/mem/kmem.h"
 #include "kernel/mem/protect.h"
 #include "kernel/sched/idt.h"
@@ -40,6 +41,7 @@ extern int check_user_vma_range(uintptr_t *fault_va, struct task *task, void *ba
 pid_t pid_max = 1 << 16;
 struct task **tasks = (struct task **)PIDMAP_BASE;
 size_t nuser_tasks = 0;
+size_t nkernel_tasks = 0;
 
 /* Looks up the respective task for a given PID.
  * If check_perm is non-zero, this function checks if the PID maps to the
@@ -323,10 +325,19 @@ void task_create(uint8_t *binary, enum task_type type)
 	return;
 }
 
-void kthread_create(enum task_type type)
+void zero_page_thread(struct page_info page)
 {
-	/* LAB 5: modify your code here. */
-	/* LAB 3: your code here. */
+	fine_spin_lock(&runq_lock);
+	memset(page2kva(&page), 0, PAGE_SIZE);
+	page_decref(&page);
+	fine_spin_unlock(&runq_lock);
+	return;
+}
+
+
+void kthread_create(void (*entry)(void))
+{
+	/* LAB 6: your code here. */
 	struct task *kthread = kmalloc(sizeof (*kthread));
 	if (!kthread) {
 		panic("couldnt allocate task");
@@ -364,18 +375,22 @@ void kthread_create(enum task_type type)
 
 	kthread->task_wait = NULL;
 	kthread->task_wait_exit_status = NULL;
+	nkernel_tasks++;
+
+	uintptr_t stack_top = KSTACK_TOP + (nkernel_tasks + 1) * (KSTACK_SIZE + KSTACK_GAP);
+    uintptr_t stack_bottom = stack_top - KSTACK_SIZE;
+    uintptr_t guard_bottom = stack_bottom - KSTACK_GAP;
 
 	struct page_info *page = page_alloc(ALLOC_ZERO);
     if (!page) {
 		panic("Couldnt allocate page for kthread stack");
 	}
-    ++page->pp_ref;
+	page_insert(kernel_pml4, page, (void *)(stack_bottom), PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
 
 	void *kthread_stack = page2kva(page);
 	if (!kthread_stack) { 
 		panic("Couldnt get kva for kthread stack");
 	}
-
 	kthread->task_pml4 = kernel_pml4;
 
 	memset(&kthread->task_frame, 0, sizeof (kthread->task_frame));
@@ -384,8 +399,7 @@ void kthread_create(enum task_type type)
     kthread->task_frame.ds     = GDT_KDATA;
     kthread->task_frame.rflags = FLAGS_IF | 0x2;
 	kthread->task_frame.rsp    = (uint64_t)kthread_stack + PAGE_SIZE;
-	//kthread->task_frame.rip    = (uint64_t)kthread_entry;
-
+	kthread->task_frame.rip    = (uint64_t)entry; 
 
 	fine_spin_lock(&runq_lock);
     list_add_tail(&runq, &kthread->task_node);
