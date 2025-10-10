@@ -117,7 +117,7 @@ void kmain(struct boot_info *boot_info)
 	// big_spin_lock(&kernel_lock);
 	task_create(binary, TASK_TYPE_USER);
 	boot_cpus();
-	kthread_create(zero_page_thread);
+	//kthread_create(zero_page_thread);
 	big_spin_lock(&kernel_lock);
 	
 	sched_yield();

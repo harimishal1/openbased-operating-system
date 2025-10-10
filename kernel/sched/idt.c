@@ -277,7 +277,9 @@ void int_handler(struct int_frame *frame)
 			panic("Interrupt with kernel lock held!");
 	} */
 		
-	big_spin_lock(&kernel_lock);
+	if (!big_spin_haslock(&kernel_lock)){
+		big_spin_lock(&kernel_lock);
+	}
 	//cprintf("INT handler on core %d, INT_NUM=%d\n", this_cpu->cpu_id, frame->int_no);
 
 	assert(!(read_rflags() & FLAGS_IF));
