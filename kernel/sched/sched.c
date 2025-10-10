@@ -51,8 +51,6 @@ void sched_yield(void)
 {
 try_again:
 	/* LAB 5: your code here. */
-    // assert(big_spin_haslock(&kernel_lock));
-
     if (cur_task && cur_task->task_status == TASK_RUNNING) {
 
 		// lab 5 scheduler
@@ -62,12 +60,10 @@ try_again:
         cur_task->task_time_budget -= (int64_t)used_time;
 
         cur_task->task_status = TASK_RUNNABLE;
-        // list_add(&runq, &cur_task->task_node);
 		if (cur_task->task_cpunum == this_cpu->cpu_id && this_cpu->runq_len > 0) {
-			this_cpu->runq_len--;
+			this_cpu->runq_len++;
 		}
 		list_add(&this_cpu->nextq, &cur_task->task_node);
-        // cprintf("sched_yield: adding frame with rip %p to runq\n", cur_task->task_frame.rip);
         cur_task = NULL;
     }
 
@@ -76,14 +72,10 @@ try_again:
 	// First try from own runq
     while (!list_is_empty(&this_cpu->runq)) {
         next_task = container_of(list_pop_tail(&this_cpu->runq), struct task, task_node);
-        // cprintf("next task pid is %d and whther the runq is empty %d\n", next_task->task_pid, list_is_empty(&runq));
         if (next_task->task_status != TASK_RUNNABLE) {
-            // could happen due to parent proc kills child proc
-            //cprintf("Warning: Found a non-runnable task in the run queue. Skipping.\n");
+            next_task = NULL;
             continue;
         }
-        // cprintf("[CPU %d] Switching to task with PID %d Next RIP:%p\n", this_cpu->cpu_id, next_task->task_pid,
-            // next_task->task_frame.rip);
 
 		next_task->task_cpunum = this_cpu->cpu_id;
 		this_cpu->runq_len++;
@@ -103,20 +95,22 @@ try_again:
 	}
 	// Now own runq is empty so try taking some from the global or migrate
     if (fine_spin_trylock(&runq_lock) == 0) {
-		if (list_is_empty(&runq) && this_cpu->runq_len > 0) {
-			int migrate_count = this_cpu->runq_len / 2;
-        	for (int i = 0; i < migrate_count && !list_is_empty(&this_cpu->nextq); i++) {
-        	    struct list *node = list_pop_tail(&this_cpu->nextq);
-        	    list_add(&runq, node);
-        	    this_cpu->runq_len--;
-        	}
-		} else {
-        	int take_from_global_runq = 1;
-        	for (int i = 0; i < take_from_global_runq && !list_is_empty(&runq); ++i) {
-        	    struct list *node = list_pop_tail(&runq);
-        	    list_add(&this_cpu->runq, node);
-        	}
-		}
+        int local_size = this_cpu->runq_len;
+        int high = nuser_tasks / ncpus + 2;
+
+        if (local_size > high) {
+            int migrate_count = local_size / 2;
+            for (int i = 0; i < migrate_count && !list_is_empty(&this_cpu->nextq); i++) {
+                struct list *node = list_pop_tail(&this_cpu->nextq);
+                list_add(&runq, node);
+                this_cpu->runq_len--;
+            }
+        }
+        int take_from_global_runq = 4;
+        for (int i = 0; i < take_from_global_runq && !list_is_empty(&runq); ++i) {
+            struct list *node = list_pop_tail(&runq);
+            list_add(&this_cpu->runq, node);
+        }
 
 		if (fine_spin_haslock(&runq_lock)) {
 			fine_spin_unlock(&runq_lock);
