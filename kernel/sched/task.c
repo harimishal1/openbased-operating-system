@@ -180,6 +180,10 @@ struct task *task_alloc(pid_t ppid)
 	task->task_frame.cs = GDT_UCODE | 3;
 	task->task_frame.rflags = FLAGS_IF | 0x2;
 
+	task->task_time_budget = TIMESLICE;
+	task->last_time_stamp = read_tsc();
+
+
 
 	/* You will set task->task_frame.rip later. */
 	cprintf("[PID %5u] New task with PID %u\n",
@@ -391,6 +395,10 @@ void kthread_create(enum task_type type)
     kthread->task_frame.ds     = GDT_KDATA;
     kthread->task_frame.rflags = FLAGS_IF | 0x2;
 	kthread->task_frame.rsp    = (uint64_t)kthread_stack + PAGE_SIZE;
+
+	kthread->task_time_budget = TIMESLICE;
+	kthread->last_time_stamp = read_tsc();
+
 
 
 	/* fine_spin_lock(&runq_lock);

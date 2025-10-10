@@ -199,8 +199,19 @@ void divide_handler(struct int_frame *frame)
 
 }
 
+volatile bool reschedule = false;
 void irq_handler(struct int_frame *frame)
 {
+	uint64_t current_time_stamp = read_tsc();
+	if(!cur_task)return;
+    uint64_t used_time = current_time_stamp - cur_task->last_time_stamp;
+    cur_task->last_time_stamp = current_time_stamp;
+    if (cur_task->task_time_budget > 0) {
+        cur_task->task_time_budget -= (int64_t)used_time;
+    }
+    if (cur_task->task_time_budget <= 0) {
+        reschedule = true;
+    }
     lapic_eoi();
 	sched_yield(); 
 }
@@ -303,6 +314,12 @@ void int_handler(struct int_frame *frame)
 //         return;
 //     }
 // 	task_run(cur_task);
+
+	if (reschedule) {
+    	reschedule = false;
+    	sched_yield();
+    }
+
 	if(cur_task) {
 		task_run(cur_task);
 	} else {
