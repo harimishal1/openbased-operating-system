@@ -26,6 +26,9 @@
 extern void kthread_create(void (*entry)(struct page_info *page), void *arg);
 extern void zero_page_daemon(struct page_info *page);
 extern struct spinlock runq_lock;
+extern void kthread_create(void (*entry)(struct page_info *page), void *arg);
+extern void zero_page_daemon(struct page_info *page);
+extern struct spinlock runq_lock;
 extern struct spinlock kernel_lock;
 
 uint8_t *find_user_binary() {

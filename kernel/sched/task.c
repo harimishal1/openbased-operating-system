@@ -36,7 +36,22 @@
 
 extern struct spinlock kernel_lock;
 extern struct spinlock runq_lock;
+extern struct spinlock runq_lock;
 extern struct list runq;
+extern struct list zeroq;
+
+struct spinlock zeroq_lock = {
+#ifdef DEBUG_SPINLOCK
+	.name = "zeroq_lock",
+#endif
+};
+
+struct spinlock kthread_lock = {
+#ifdef DEBUG_SPINLOCK
+	.name = "kthread_lock",
+#endif
+};
+
 extern struct list zeroq;
 
 struct spinlock zeroq_lock = {
@@ -57,6 +72,7 @@ pid_t pid_max = 1 << 16;
 struct task **tasks = (struct task **)PIDMAP_BASE;
 size_t nuser_tasks = 0;
 size_t nkernel_tasks = 0;
+
 
 /* Looks up the respective task for a given PID.
  * If check_perm is non-zero, this function checks if the PID maps to the
@@ -384,15 +400,19 @@ void kthread_create(void (*entry)(void *), void *arg)
 	}  */
 	
 	kthread->task_type = TASK_TYPE_KERNEL;
-	
+		
+	/*Add to PID map */
 	/*Add to PID map */
 	pid_t pid;
     for (pid = 1; pid < pid_max; ++pid) {
+		if (!tasks[pid]) { 
 		if (!tasks[pid]) { 
 			tasks[pid] = kthread; kthread->task_pid = pid; 
 			break; 
 		}
     }
+	
+	/* We are out of PIDs. */
 	
 	/* We are out of PIDs. */
     if (pid == pid_max) 
@@ -403,7 +423,15 @@ void kthread_create(void (*entry)(void *), void *arg)
 	size_t nkernel_number = nkernel_tasks + 1;
 	
 	/*Initialize task struct */	
+	{ kfree(kthread); 
+		panic("Max PIDs reached"); 
+	}
+	nkernel_tasks++;
+	size_t nkernel_number = nkernel_tasks + 1;
+	
+	/*Initialize task struct */	
 	kthread->task_pml4 = kernel_pml4;
+    kthread->task_type = TASK_TYPE_KERNEL;
     kthread->task_type = TASK_TYPE_KERNEL;
     kthread->task_status = TASK_RUNNABLE;
     kthread->task_runs = 0;
@@ -412,14 +440,20 @@ void kthread_create(void (*entry)(void *), void *arg)
     kthread->task_exit_status = 0;
 
 	/* Setting up the kernel thread's lists and rb tree */
+	/* Setting up the kernel thread's lists and rb tree */
 	rb_init(&kthread->task_rb);
 	list_init(&kthread->task_mmap);
 	list_init(&kthread->task_children);
 	list_init(&kthread->task_zombies);
 	list_init(&kthread->task_node);
 	list_init(&kthread->task_child);
+	list_init(&kthread->task_child);
 	kthread->task_wait = NULL;
 	kthread->task_wait_exit_status = NULL;
+
+	/* Setting up the kernel_thread */
+	uintptr_t stack_top = KSTACK_TOP + (nkernel_number) * (PAGE_SIZE);
+    uintptr_t stack_bottom = stack_top - PAGE_SIZE;
 
 	/* Setting up the kernel_thread */
 	uintptr_t stack_top = KSTACK_TOP + (nkernel_number) * (PAGE_SIZE);
@@ -430,12 +464,14 @@ void kthread_create(void (*entry)(void *), void *arg)
 		panic("Couldnt allocate page for kthread stack");
 	}
 	page_insert(kernel_pml4, page, (void *)(stack_bottom), PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+	page_insert(kernel_pml4, page, (void *)(stack_bottom), PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
 
 	void *kthread_stack = page2kva(page);
 	if (!kthread_stack) { 
 		panic("Couldnt get kva for kthread stack");
 	}
 
+	memset(&kthread->task_frame, 0, sizeof(kthread->task_frame));
 	memset(&kthread->task_frame, 0, sizeof(kthread->task_frame));
     kthread->task_frame.cs     = GDT_KCODE;
     kthread->task_frame.ss     = GDT_KDATA;
