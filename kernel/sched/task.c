@@ -36,22 +36,7 @@
 
 extern struct spinlock kernel_lock;
 extern struct spinlock runq_lock;
-extern struct spinlock runq_lock;
 extern struct list runq;
-extern struct list zeroq;
-
-struct spinlock zeroq_lock = {
-#ifdef DEBUG_SPINLOCK
-	.name = "zeroq_lock",
-#endif
-};
-
-struct spinlock kthread_lock = {
-#ifdef DEBUG_SPINLOCK
-	.name = "kthread_lock",
-#endif
-};
-
 extern struct list zeroq;
 
 struct spinlock zeroq_lock = {
@@ -72,7 +57,6 @@ pid_t pid_max = 1 << 16;
 struct task **tasks = (struct task **)PIDMAP_BASE;
 size_t nuser_tasks = 0;
 size_t nkernel_tasks = 0;
-
 
 /* Looks up the respective task for a given PID.
  * If check_perm is non-zero, this function checks if the PID maps to the
@@ -362,27 +346,28 @@ void task_create(uint8_t *binary, enum task_type type)
 
 void zero_page_daemon(void *arg)
 {	
-	lapic_timer_off();
-	if(!big_spin_haslock(&kernel_lock)) {
-		big_spin_lock(&kernel_lock);
-	}
-	int freed_pages = 0;
-	fine_spin_lock(&zeroq_lock);
-	while (!list_is_empty(&zeroq) && freed_pages < 10) {
-		struct list *node = list_pop_tail(&zeroq);
-		struct page_info *pp = container_of(node, struct page_info, pp_node);
-		memset(page2kva(pp), 0, PAGE_SIZE);
-		list_del(&pp->pp_node);
-		page_free(pp);
-		freed_pages++;
-	}
-	list_init(&zeroq);
-	fine_spin_unlock(&zeroq_lock);
-
-	cur_task->task_status = TASK_RUNNABLE;
-	list_add(&this_cpu->runq, &cur_task->task_node);
-	cur_task = NULL;
-	sched_yield();
+    //lapic_timer_off();
+	while (1) {
+		if(!fine_spin_haslock(&zeroq_lock)){
+			fine_spin_lock(&zeroq_lock);
+		}
+        //fine_spin_lock(&zeroq_lock);
+        if (list_is_empty(&zeroq)) {
+            fine_spin_unlock(&zeroq_lock);
+			fine_spin_lock(&runq_lock);
+    		list_add(&runq, &cur_task->task_node);
+			cprintf("Daemon [PID %u] is yielding.\n", cur_task->task_pid);
+    		fine_spin_unlock(&runq_lock);
+            sched_yield();
+        }
+        struct page_info *page = container_of(list_pop_tail(&zeroq), struct page_info, pp_node);
+		if(fine_spin_haslock(&zeroq_lock)){
+			fine_spin_unlock(&zeroq_lock);
+		}
+		//fine_spin_unlock(&zeroq_lock);
+        memset(page2kva(page), 0, PAGE_SIZE);
+        page_free(page);
+    }
 }
 
 void kthread_create(void (*entry)(void *), void *arg)
@@ -400,19 +385,15 @@ void kthread_create(void (*entry)(void *), void *arg)
 	}  */
 	
 	kthread->task_type = TASK_TYPE_KERNEL;
-		
-	/*Add to PID map */
+	
 	/*Add to PID map */
 	pid_t pid;
     for (pid = 1; pid < pid_max; ++pid) {
-		if (!tasks[pid]) { 
 		if (!tasks[pid]) { 
 			tasks[pid] = kthread; kthread->task_pid = pid; 
 			break; 
 		}
     }
-	
-	/* We are out of PIDs. */
 	
 	/* We are out of PIDs. */
     if (pid == pid_max) 
@@ -423,15 +404,7 @@ void kthread_create(void (*entry)(void *), void *arg)
 	size_t nkernel_number = nkernel_tasks + 1;
 	
 	/*Initialize task struct */	
-	{ kfree(kthread); 
-		panic("Max PIDs reached"); 
-	}
-	nkernel_tasks++;
-	size_t nkernel_number = nkernel_tasks + 1;
-	
-	/*Initialize task struct */	
 	kthread->task_pml4 = kernel_pml4;
-    kthread->task_type = TASK_TYPE_KERNEL;
     kthread->task_type = TASK_TYPE_KERNEL;
     kthread->task_status = TASK_RUNNABLE;
     kthread->task_runs = 0;
@@ -440,20 +413,14 @@ void kthread_create(void (*entry)(void *), void *arg)
     kthread->task_exit_status = 0;
 
 	/* Setting up the kernel thread's lists and rb tree */
-	/* Setting up the kernel thread's lists and rb tree */
 	rb_init(&kthread->task_rb);
 	list_init(&kthread->task_mmap);
 	list_init(&kthread->task_children);
 	list_init(&kthread->task_zombies);
 	list_init(&kthread->task_node);
 	list_init(&kthread->task_child);
-	list_init(&kthread->task_child);
 	kthread->task_wait = NULL;
 	kthread->task_wait_exit_status = NULL;
-
-	/* Setting up the kernel_thread */
-	uintptr_t stack_top = KSTACK_TOP + (nkernel_number) * (PAGE_SIZE);
-    uintptr_t stack_bottom = stack_top - PAGE_SIZE;
 
 	/* Setting up the kernel_thread */
 	uintptr_t stack_top = KSTACK_TOP + (nkernel_number) * (PAGE_SIZE);
@@ -464,7 +431,6 @@ void kthread_create(void (*entry)(void *), void *arg)
 		panic("Couldnt allocate page for kthread stack");
 	}
 	page_insert(kernel_pml4, page, (void *)(stack_bottom), PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
-	page_insert(kernel_pml4, page, (void *)(stack_bottom), PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
 
 	void *kthread_stack = page2kva(page);
 	if (!kthread_stack) { 
@@ -472,11 +438,10 @@ void kthread_create(void (*entry)(void *), void *arg)
 	}
 
 	memset(&kthread->task_frame, 0, sizeof(kthread->task_frame));
-	memset(&kthread->task_frame, 0, sizeof(kthread->task_frame));
     kthread->task_frame.cs     = GDT_KCODE;
     kthread->task_frame.ss     = GDT_KDATA;
     kthread->task_frame.ds     = GDT_KDATA;
-    kthread->task_frame.rflags = FLAGS_IF | 0x2;
+    kthread->task_frame.rflags = 0x0;
 	kthread->task_frame.rdi    = (uint64_t)arg;
 	kthread->task_frame.rsp    = (uint64_t)stack_top;
 	kthread->task_frame.rip    = (uint64_t)entry; 
@@ -495,8 +460,9 @@ void kthread_create(void (*entry)(void *), void *arg)
     fine_spin_unlock(&runq_lock); */
 	
     list_add(&this_cpu->runq, &kthread->task_node);
-	cprintf("[PID %5u] New kernel thread with PID %u\n", cur_task ? cur_task->task_pid : 0, kthread->task_pid);
-	cprintf("Daemon [PID %u] created, task_node at %p\n", kthread->task_pid, &kthread->task_node);
+	cprintf("[PID %5u] New kernel thread with PID %u\n",
+            cur_task ? cur_task->task_pid : 0, kthread->task_pid);
+			cprintf("Daemon [PID %u] created, task_node at %p\n", kthread->task_pid, &kthread->task_node);
 	fine_spin_unlock(&kthread_lock);
 	return;
 }
@@ -519,8 +485,8 @@ void task_free(struct task *task)
 
 	if (task->task_ppid != 0) {
 		struct task *parent = pid2task(task->task_ppid, 0);
-		/* if (task->task_pid == 2) {
-			// print parent infoif it is readyor print it is null
+		if (task->task_pid == 2) {
+			// print parent infoif it is ready or print it is null
 			if (parent) {
 				cprintf("Parent of 2 is %d and its status is %d\n", parent->task_pid, parent->task_status);
 				// print task_wait
@@ -532,7 +498,7 @@ void task_free(struct task *task)
 			} else {
 				cprintf("Parent of 2 is NULL\n");
 			}
-		} */
+		}
 		if (parent) {
 			if ((parent->task_status == TASK_NOT_RUNNABLE) && // hari - maybe change parent->task_wait to set parent later
 				((parent->task_wait == NULL )|| parent->task_wait == task)) {
