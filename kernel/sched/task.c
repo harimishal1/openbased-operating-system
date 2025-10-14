@@ -33,6 +33,7 @@
 #include <kernel/mem.h>
 #include <kernel/sched.h>
 
+#include <kernel/acpi.h>
 
 extern struct spinlock kernel_lock;
 extern struct spinlock runq_lock;
