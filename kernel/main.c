@@ -20,6 +20,7 @@
 #include <kernel/test/probe.h>
 #include <kernel/test/test.h>
 #include <kernel/symbols.h>
+#include <kernel/dev/pci.h>
 
 extern void kthread_create(void (*entry)(struct page_info *page), void *arg);
 extern void zero_page_daemon(struct page_info *page);
@@ -94,8 +95,10 @@ void kmain(struct boot_info *boot_info)
 	madt_init(rsdp);
 	lapic_init();
 	hpet_init(rsdp);
-		
-	
+
+	pci_init(rsdp);
+
+
 	/* Set up the tasks. */
 	task_init();
 	sched_init();

@@ -60,7 +60,15 @@ $(OBJDIR)/kernel/kernel.img: $(OBJDIR)/kernel/kernel $(OBJDIR)/boot/boot
 	$(V)truncate -s 5M $(OBJDIR)/kernel/kernel.img~
 	$(V)mv $(OBJDIR)/kernel/kernel.img~ $(OBJDIR)/kernel/kernel.img
 
-all: $(OBJDIR)/kernel/kernel.img
+# Build a swap image.
+$(OBJDIR)/kernel/swap.img:
+	@echo + mk $@
+	@mkdir -p $(OBJDIR)/kernel
+	$(V)echo -n "SWAP" > $(OBJDIR)/kernel/swap.img~
+	$(V)truncate -s 128M $(OBJDIR)/kernel/swap.img~
+	$(V)mv $(OBJDIR)/kernel/swap.img~ $(OBJDIR)/kernel/swap.img
+
+all: $(OBJDIR)/kernel/kernel.img $(OBJDIR)/kernel/swap.img
 
 grub: $(OBJDIR)/lsd-grub
 

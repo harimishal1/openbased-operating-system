@@ -304,6 +304,12 @@ QEMUOPTS += -device ide-hd,drive=disk0,bus=ahci.0
 IMAGES += $(OBJDIR)/kernel/kernel.img
 
 
+# Mount the swap disk image as a drive as well
+QEMUOPTS += -drive id=disk1,format=raw,file=$(OBJDIR)/kernel/swap.img,if=none
+QEMUOPTS += -device ide-hd,drive=disk1,bus=ahci.1
+IMAGES += $(OBJDIR)/kernel/swap.img
+
+
 # Add user-specified configuration
 QEMUOPTS += $(QEMUEXTRA)
 
