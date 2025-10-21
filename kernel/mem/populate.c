@@ -15,6 +15,8 @@ struct populate_info {
 	uintptr_t base, end;
 };
 
+extern void oom_kill_task(void);
+
 static int populate_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
 {
@@ -25,8 +27,15 @@ static int populate_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	if (*entry & PAGE_PRESENT && page->pp_ref > 1) {
 		struct page_info *new_page = page_alloc(ALLOC_ZERO);
 		if (!new_page) {
-			return -1;
+			// LAB 7
+			oom_kill_task();
+			new_page = page_alloc(ALLOC_ZERO);
+			if (!new_page) return -1;
 		}
+		if (cur_task) {
+			cur_task->task_rss++;
+		}
+
 		page_decref(page);
 		new_page->pp_ref++;
 		*entry = page2pa(new_page) | PAGE_PRESENT | info->flags;
@@ -38,7 +47,13 @@ static int populate_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	} else {
 		page = page_alloc(ALLOC_ZERO);
 		if (!page) {
-			return -1;
+			// LAB 7
+			oom_kill_task();
+			page = page_alloc(ALLOC_ZERO);
+			if (!page) return -1;
+		}
+		if (cur_task) {
+			cur_task->task_rss++;
 		}
 
 		page->pp_ref++;
@@ -57,8 +72,15 @@ static int populate_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	if ((*entry & PAGE_PRESENT) && (*entry & PAGE_HUGE && page->pp_ref > 1)) { 
 		struct page_info *new_page = page_alloc(ALLOC_ZERO | ALLOC_HUGE);
 		if (!new_page) {
-			return -1;
+			// LAB 7
+			oom_kill_task();
+			new_page = page_alloc(ALLOC_ZERO | ALLOC_HUGE);
+			if (!new_page) return -1;
 		}
+		if (cur_task){
+			cur_task->task_rss+=512;
+		}
+
 		*entry = page2pa(new_page) | PAGE_PRESENT | PAGE_HUGE | info->flags;
 		page_decref(page);
 		new_page->pp_ref++;
@@ -69,8 +91,16 @@ static int populate_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	} else {
 		if(info->base <= base && info->end >= end) {
 		page = page_alloc(ALLOC_ZERO | ALLOC_HUGE);
-		if (!page) 
-			return -1; 
+		if (!page) {
+			// LAB 7
+			oom_kill_task();
+			page = page_alloc(ALLOC_ZERO | ALLOC_HUGE);
+			if (!page) return -1;
+		}
+		if (cur_task){
+			cur_task->task_rss+=512;
+		}
+
 		page->pp_ref++;
 		*entry = page2pa(page) | info->flags | PAGE_PRESENT | PAGE_HUGE; 
 		} else {

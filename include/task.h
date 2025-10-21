@@ -81,6 +81,9 @@ struct task {
 	int64_t task_time_budget;
 	uint64_t last_time_stamp;
 
+	// LAB 7
+	size_t task_rss;
+
 #ifndef USE_BIG_KERNEL_LOCK
 	/* Per-task lock */
 	struct spinlock task_lock;

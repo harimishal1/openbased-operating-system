@@ -161,6 +161,9 @@ struct task *task_alloc(pid_t ppid)
 		return NULL;
 	}
 
+	// LAB 7
+	task->task_rss = 0;
+
 	/* Set up the virtual address space for the task. */
 	if (task_setup_vas(task) < 0) {
 		kfree(task);
@@ -386,6 +389,9 @@ void kthread_create(void (*entry)(void *), void *arg)
 	}  */
 	
 	kthread->task_type = TASK_TYPE_KERNEL;
+
+	// LAB 7
+	kthread->task_rss = 0;
 	
 	/*Add to PID map */
 	pid_t pid;
@@ -573,6 +579,38 @@ void task_destroy(struct task *task)
 		cur_task = NULL;
 	}
 	sched_yield();
+}
+
+// LAB 7
+void oom_kill_task(void)
+{
+
+	pid_t pid;
+	size_t max_rss = 0;
+	struct task *oom_killing_candidate;
+
+    for (pid = 1; pid < pid_max; ++pid) {
+		if (!tasks[pid] || tasks[pid]->task_status == TASK_DYING || tasks[pid]->task_type == TASK_TYPE_KERNEL) {
+			continue;
+		}
+		if (max_rss < tasks[pid]->task_rss) {
+			max_rss = tasks[pid]->task_rss;
+			oom_killing_candidate = tasks[pid];
+		}
+    }
+
+	if (oom_killing_candidate) {
+		cprintf("[OOM] Killing task with pid %d with rss %d\n", oom_killing_candidate->task_pid, oom_killing_candidate->task_rss);
+		task_destroy(oom_killing_candidate);
+		return;
+	} else if (cur_task && cur_task->task_pid != 0) {
+		cprintf("[OOM] Killing task with pid %d with rss %d\n", cur_task->task_pid, cur_task->task_rss);
+		task_destroy(cur_task);
+		return;
+	} else {
+        cprintf("[OOM] Trying to OOM kill task pid 0\n");
+        panic("Task 0 OOM");
+	}
 }
 
 /*

@@ -1,6 +1,7 @@
 
 #include "kernel/mem/buddy.h"
 #include "kernel/mem/tlb.h"
+#include "kernel/sched/task.h"
 #include "stdio.h"
 #include "x86-64/asm.h"
 #include "x86-64/paging.h"
@@ -9,6 +10,10 @@
 #include <paging.h>
 
 #include <kernel/mem.h>
+
+
+
+extern void oom_kill_task(void);
 
 /* Allocates a page table if none is present for the given entry.
  * If there is already something present in the PTE, then this function simply
@@ -25,8 +30,15 @@ int ptbl_alloc(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	}
 	struct page_info *page = page_alloc(ALLOC_ZERO);
 	if (!page) {
-		return -1;
+		// LAB 7
+		oom_kill_task();
+		page = page_alloc(ALLOC_ZERO);
+		if (!page) return -1;
 	}
+	if (cur_task) {
+		cur_task->task_rss++;
+	}
+
 	page->pp_ref++;
 	*entry = page2pa(page); 
 	*entry = *entry | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
@@ -76,8 +88,15 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		struct page_info *huge_page = pa2page(PAGE_ADDR(*entry));
 		struct page_info *new_page = page_alloc(ALLOC_ZERO);
 		if (!new_page) {
-			return -1;
+			// LAB 7
+			oom_kill_task();
+			new_page = page_alloc(ALLOC_ZERO);
+			if (!new_page) return -1;
 		}
+		if (cur_task) {
+			cur_task->task_rss++;
+		}
+
 		new_page->pp_ref++;
 
 		uint64_t flags = *entry & PAGE_UMASK;
@@ -96,7 +115,13 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
 			} else {
 				struct page_info *page = page_alloc(ALLOC_ZERO);
 				if (!page) {
-					return -1;
+					// LAB 7
+					oom_kill_task();
+					page = page_alloc(ALLOC_ZERO);
+					if (!page) return -1;
+				}
+				if (cur_task) {
+					cur_task->task_rss++;
 				}
 				
 				uintptr_t page_kva = (uintptr_t)page2kva(huge_page) + i * PAGE_SIZE;
@@ -108,6 +133,10 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		}
 		if (!statically_mapped) {
 			page_decref(huge_page);
+
+			if (cur_task) {
+				cur_task->task_rss-=512;
+			}
 		}
 	}
 	return 0;
@@ -152,6 +181,16 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
 			}
 		}
 		struct page_info *huge_page = page_alloc(ALLOC_HUGE|ALLOC_ZERO);
+		if (!huge_page) {
+			// LAB 7
+			oom_kill_task();
+			huge_page = page_alloc(ALLOC_HUGE | ALLOC_ZERO);
+			if (!huge_page) return -1;
+		}
+		if (cur_task) {
+			cur_task->task_rss+=512;
+		}
+
 		huge_page->pp_ref++;
 		uint64_t flags = (ptbl->entries[0] & PAGE_UMASK);
 		for(size_t i = 0; i < PAGE_TABLE_ENTRIES; i++){
@@ -166,6 +205,10 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
 			struct page_info *page = pa2page(PAGE_ADDR(ptbl->entries[i]));
 			// page_free(page);
 			page_decref(page);
+			// LAB 7
+			if (cur_task) {
+				cur_task->task_rss--;
+			}
 		}
 		page_decref(pt);
 		return 0;
@@ -194,6 +237,10 @@ int ptbl_free(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		}
 	}
 
+	// LAB 7
+	if (cur_task) {
+		cur_task->task_rss--;
+	}
 	page_decref(pa2page(PAGE_ADDR(*entry)));
 	*entry = 0;
 	
