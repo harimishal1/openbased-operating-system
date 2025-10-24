@@ -1,4 +1,4 @@
-#Lab 7 Report for Swapping 
+## Lab 7 Report for Swapping 
 Swap-Out Integration and Memory Pressure Handling
 
 The swap_out path would be triggered whenever the kernel detects that physical memory is exhausted, that is, when page_alloc() fails to return a free frame. Currently, this condition calls oom_kill_task() inside populate_region() as a last resort, which scans all running user tasks and kills the one with the largest resident set size (RSS) to reclaim memory.
