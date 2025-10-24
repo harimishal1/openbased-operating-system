@@ -10,6 +10,8 @@
 
 #include <kernel/mem.h>
 
+extern struct list active_pages;				
+
 struct populate_info {
 	uint64_t flags;
 	uintptr_t base, end;
@@ -40,6 +42,10 @@ static int populate_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		new_page->pp_ref++;
 		*entry = page2pa(new_page) | PAGE_PRESENT | info->flags;
 		memcpy(page2kva(new_page), page2kva(page), PAGE_SIZE);
+			new_page->virt_addr = ROUNDDOWN(base, PAGE_SIZE);
+		new_page->owner = cur_task;
+		list_init(&new_page->active_node);
+		list_add_tail(&active_pages, &new_page->active_node);
 		tlb_invalidate(cur_task->task_pml4, (void*)base);
 		return 0;
 	} else if (*entry & PAGE_PRESENT && page->pp_ref == 1) {

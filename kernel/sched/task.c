@@ -46,6 +46,15 @@ struct spinlock zeroq_lock = {
 #endif
 };
 
+struct list inactive_pages;
+struct list active_pages;
+
+struct spinlock active_pages_lock = {
+#ifdef DEBUG_SPINLOCK
+	.name = "active_pages_lock",
+#endif
+};
+
 struct spinlock kthread_lock = {
 #ifdef DEBUG_SPINLOCK
 	.name = "kthread_lock",
@@ -346,6 +355,42 @@ void task_create(uint8_t *binary, enum task_type type)
 	list_add(&this_cpu->runq, &task->task_node);
 
 	return;
+}
+
+void page_check_daemon(void *arg)
+{
+    struct list *node;
+	struct list *next;
+
+    while (1) {
+        spin_lock(&active_pages_lock);
+
+        // Iterate over all active pages
+        list_foreach_safe(&active_pages, node, next) {
+            struct page_info *pp = container_of(node, struct page_info, active_node);
+            struct task *task = pp->owner;
+
+            if (!task || !task->task_pml4) {
+                continue;
+            }
+
+            uintptr_t va = pp->virt_addr;
+            physaddr_t *pte = (physaddr_t*)page_lookup(task->task_pml4, (void *)va, 0);
+            if (!pte) {
+                continue;
+            }
+
+            if (*pte & PAGE_ACCESSED) {
+                *pte &= ~PAGE_ACCESSED;
+            } else {
+                list_del(&pp->active_node);
+                list_add_tail(&inactive_pages, &pp->active_node);
+            }
+        }
+
+        spin_unlock(&active_pages_lock);
+        sched_yield();
+    }
 }
 
 void zero_page_daemon(void *arg)

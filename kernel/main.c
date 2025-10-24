@@ -23,10 +23,8 @@
 #include <kernel/test/test.h>
 #include <kernel/symbols.h>
 #include <kernel/dev/pci.h>
+#include <kernel/mem/swap.h>
 
-extern void kthread_create(void (*entry)(struct page_info *page), void *arg);
-extern void zero_page_daemon(struct page_info *page);
-extern struct spinlock runq_lock;
 extern void kthread_create(void (*entry)(struct page_info *page), void *arg);
 extern void zero_page_daemon(struct page_info *page);
 extern struct spinlock runq_lock;
@@ -103,7 +101,8 @@ void kmain(struct boot_info *boot_info)
 	//lapic_timer_off();	
 	pci_init(rsdp);
 
-	
+	swap_init(); 
+
 	/* Set up the tasks. */
 	task_init();
 	sched_init();
@@ -125,6 +124,8 @@ void kmain(struct boot_info *boot_info)
 	task_create(binary, TASK_TYPE_USER);
 	boot_cpus();
 	//kthread_create(zero_page_daemon, NULL);
+	//kthread_create(page_free_daemon, NULL);
+
 
 	big_spin_lock(&kernel_lock);
 	

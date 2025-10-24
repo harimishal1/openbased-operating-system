@@ -19,10 +19,8 @@ extern struct list zeroq;
 extern size_t nkernel_task;
 extern struct spinlock zeroq_lock;
 extern void zero_page_daemon(struct page_info *page);
-extern struct list zeroq;
-extern size_t nkernel_task;
-extern struct spinlock zeroq_lock;
-extern void zero_page_daemon(struct page_info *page);
+
+struct list active_pages;
 
 /*
  * List of free buddy chunks (often also referred to as buddy pages or simply
@@ -261,6 +259,12 @@ struct page_info *page_alloc(int alloc_flags)
         size_t bytes = (size_t)1ULL << (PAGE_TABLE_SHIFT + req_order);
         memset(page2kva(page), 0, bytes);
     }
+	
+    // Insert into global active list
+	page->virt_addr = 0;
+    page->owner = NULL;
+    list_init(&page->active_node);
+    list_add_tail(&active_pages, &page->active_node);
 
 	if (fine_spin_haslock(&buddy_lock)) {
 		fine_spin_unlock(&buddy_lock);

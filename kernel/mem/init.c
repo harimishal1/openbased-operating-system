@@ -21,9 +21,7 @@ extern struct list buddy_free_list[];
 struct list zeroq;
 extern void kthread_create(void (*entry)(struct page_info *page), void *arg);
 extern void zero_page_daemon(struct page_info *page);
-struct list zeroq;
-extern void kthread_create(void (*entry)(struct page_info *page), void *arg);
-extern void zero_page_daemon(struct page_info *page);
+extern struct list active_pages;
 
 /* The kernel's initial PML4. */
 struct page_table *kernel_pml4;
@@ -239,6 +237,7 @@ void page_init(struct boot_info *boot_info)
 	uintptr_t pa, end;
 	size_t i;
 
+	list_init(&active_pages);
 	/* Go through the array of struct page_info structs and:
 	 *  1) call list_init() to initialize the linked list node.
 	 *  2) set the reference count pp_ref to zero.

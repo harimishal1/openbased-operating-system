@@ -2,6 +2,7 @@
 
 #include <list.h>
 
+#include <stdint.h>
 #include <x86-64/paging.h>
 
 #ifndef __ASSEMBLER__
@@ -49,5 +50,9 @@ struct page_info {
 
 	/* Reserved. */
 	uint64_t pp_zero;
+
+	uint64_t virt_addr;      // Virtual address mapped to this physical page
+    struct task *owner;      // Pointer to owning task/process
+    struct list active_node; // Node for global or per-task active list
 };
 #endif /* !__ASSEMBLER__ */
