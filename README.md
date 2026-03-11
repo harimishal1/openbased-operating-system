@@ -1,4 +1,5 @@
-#This is a toy operating system written by me during my master's. The template is the OpenLSD template. I will be updating and improving this to be faster and more secure as I learn more.
+## About This
+This is a toy operating system written by me during my master's. The template is the OpenLSD template. I will be updating and improving this to be faster and more secure as I learn more.
 
 ## Implemented bonus features
 
