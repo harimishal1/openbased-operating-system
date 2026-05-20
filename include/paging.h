@@ -1,8 +1,6 @@
 #pragma once
 
 #include <list.h>
-
-#include <stdint.h>
 #include <x86-64/paging.h>
 
 #ifndef __ASSEMBLER__

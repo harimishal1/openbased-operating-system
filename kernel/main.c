@@ -99,9 +99,9 @@ void kmain(struct boot_info *boot_info)
 	lapic_init();
 	hpet_init(rsdp);
 	//lapic_timer_off();	
-	pci_init(rsdp);
+	//pci_init(rsdp);
 
-	swap_init(); 
+	//swap_init(); 
 
 	/* Set up the tasks. */
 	task_init();
@@ -123,7 +123,7 @@ void kmain(struct boot_info *boot_info)
 	// big_spin_lock(&kernel_lock);
 	task_create(binary, TASK_TYPE_USER);
 	boot_cpus();
-	//kthread_create(zero_page_daemon, NULL);
+	kthread_create(zero_page_daemon, NULL);
 	//kthread_create(page_free_daemon, NULL);
 
 
@@ -161,6 +161,7 @@ void _panic(const char *file, int line, const char *fmt,...)
 
 dead:
 	/* Break into the kernel monitor */
+	cprintf("\n");
 	halt_kernel();
 }
 

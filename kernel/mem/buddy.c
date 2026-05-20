@@ -15,12 +15,14 @@
 /* Physical page metadata. */
 size_t npages;
 struct page_info *pages;
+
 extern struct list zeroq;
 extern size_t nkernel_task;
 extern struct spinlock zeroq_lock;
 extern void zero_page_daemon(struct page_info *page);
 
-struct list active_pages;
+extern struct list active_pages;
+extern struct spinlock active_pages_lock;
 
 /*
  * List of free buddy chunks (often also referred to as buddy pages or simply
@@ -133,7 +135,8 @@ struct page_info *buddy_split(struct page_info *lhs, size_t req_order)
 	while(lhs->pp_order > req_order) {
 
 		struct page_info *buddy;
-		size_t idx = lhs - pages, buddy_idx;
+		size_t idx = lhs - pages;
+		size_t buddy_idx;
 
 		buddy_idx = idx ^ (1ULL << (lhs->pp_order - 1));
 		buddy = pages + buddy_idx;
@@ -171,16 +174,20 @@ struct page_info *buddy_merge(struct page_info *page)
 		struct page_info *buddy;
 		struct page_info *tmp;
 
-		size_t idx = page - pages, buddy_idx;
+		size_t idx = page - pages;
+		size_t buddy_idx;
+
 		buddy_idx = idx ^ (1ULL << (page->pp_order));
 		buddy = pages + buddy_idx;
 
 		if(buddy->pp_avail == 0 || buddy->pp_ref > 0) {
 			break;
 		}
+
 		if (buddy->pp_free == 0 || buddy->pp_order != page->pp_order) {
 			break;
 		}
+
 		list_del(&buddy->pp_node);
 		if (page > buddy) {
 			tmp = page;
@@ -191,6 +198,7 @@ struct page_info *buddy_merge(struct page_info *page)
 		buddy->pp_free = 0;
 		page->pp_order++;
 	}
+	
 	return page;
 }
 
@@ -249,22 +257,27 @@ struct page_info *page_alloc(int alloc_flags)
         return NULL;
 
     struct page_info *page = buddy_find(req_order);
-    if (!page) return NULL; 
+    if (!page) {
+        if (fine_spin_haslock(&buddy_lock)) {
+            fine_spin_unlock(&buddy_lock);
+        }
+        return NULL;
+    }
 
 	#ifdef INVALID_FREE_DETECTION
 	mark_interior_on_alloc(page, req_order); //we check for higher order chunk free here
 	#endif
-    
-	if (alloc_flags & ALLOC_ZERO) { 
+
+	if (alloc_flags & ALLOC_ZERO) {
         size_t bytes = (size_t)1ULL << (PAGE_TABLE_SHIFT + req_order);
         memset(page2kva(page), 0, bytes);
     }
-	
-    // Insert into global active list
+
+    /* Initialize Lab 7 tracking fields to safe defaults.
+     * active_pages tracking is managed at the VMA level (populate.c),
+     * not here, since page_alloc doesn't know the virtual address or owner. */
 	page->virt_addr = 0;
     page->owner = NULL;
-    list_init(&page->active_node);
-    list_add_tail(&active_pages, &page->active_node);
 
 	if (fine_spin_haslock(&buddy_lock)) {
 		fine_spin_unlock(&buddy_lock);
@@ -305,6 +318,14 @@ void page_free(struct page_info *pp)
 	}
 	#endif
 	//invalid free detection
+
+	/* Remove from active_pages tracking list if the page was tracked there.
+	 * list_del() sets the node to self-circular, so next == self means not tracked. */
+	spin_lock(&active_pages_lock);
+	if (pp->active_node.next != &pp->active_node) {
+		list_del(&pp->active_node);
+	}
+	spin_unlock(&active_pages_lock);
 
 	//cprintf("Freeing page %p of order %d\n", page2pa(pp), pp->pp_order);
    	pp = buddy_merge(pp);
@@ -416,6 +437,9 @@ int buddy_grow(struct page_table *pml4, size_t size)
 		for(size_t i = 0; i < increment_structs; i++) {
 			struct page_info *info = pages_end + i;
 			list_init(&info->pp_node);
+			list_init(&info->active_node);
+			info->virt_addr = 0;
+			info->owner = NULL;
 		}
 
 		// Update npages size

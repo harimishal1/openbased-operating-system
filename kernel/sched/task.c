@@ -403,10 +403,6 @@ void zero_page_daemon(void *arg)
         //fine_spin_lock(&zeroq_lock);
         if (list_is_empty(&zeroq)) {
             fine_spin_unlock(&zeroq_lock);
-			fine_spin_lock(&runq_lock);
-    		list_add(&runq, &cur_task->task_node);
-			cprintf("Daemon [PID %u] is yielding.\n", cur_task->task_pid);
-    		fine_spin_unlock(&runq_lock);
             sched_yield();
         }
         struct page_info *page = container_of(list_pop_tail(&zeroq), struct page_info, pp_node);
@@ -596,7 +592,8 @@ void task_free(struct task *task)
 
 	/* Unmap the task from the PID map. */
 	tasks[task->task_pid] = NULL;
-	nuser_tasks--;
+	if (task->task_type == TASK_TYPE_USER)
+		nuser_tasks--;
 
 	/* Free the VMA */
 	free_vmas(task);

@@ -44,6 +44,7 @@ struct task *task_clone(struct task *task)
 	list_init(&child_task->task_children);
 	list_init(&child_task->task_zombies);
 	list_init(&child_task->task_node);
+	list_init(&child_task->task_child);
 
 
 	// loop over all vmas in parent task

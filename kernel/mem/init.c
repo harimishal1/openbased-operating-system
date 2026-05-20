@@ -248,10 +248,13 @@ void page_init(struct boot_info *boot_info)
 	for (i = 0; i < npages; ++i) {
 		/* LAB 1: your code here. */
 		list_init(&pages[i].pp_node);
+		list_init(&pages[i].active_node);
 		pages[i].pp_ref = 0;
 		pages[i].pp_free = 0;
 		pages[i].pp_order = 0;
 		pages[i].pp_avail = 0;
+		pages[i].virt_addr = 0;
+		pages[i].owner = NULL;
 	}
 
 	/* Go through the pages reserved for use by the buddy allocator itself,
@@ -380,6 +383,9 @@ void page_init_ext(struct boot_info *boot_info)
 			page->pp_ref = 0;
 			page->pp_order = 0;
 			page->pp_free = 0;
+			page->virt_addr = 0;
+			page->owner = NULL;
+			list_init(&page->active_node);
 			page_free(page);
         }
 

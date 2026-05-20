@@ -71,6 +71,18 @@ try_again:
         cur_task = NULL;
     }
 
+	/* Halt check: if all user tasks are gone, stop scheduling (even if kernel
+	 * threads remain in the queue — they should not keep the system alive). */
+	if (this_cpu->cpu_id == 0 && nuser_tasks == 0) {
+		cprintf("No user tasks running in the system! Halting.\n");
+		cpus[0].cpu_status = CPU_HALTED;
+		sched_halt();
+	}
+	if (this_cpu->cpu_id != 0 && cpus[0].cpu_status == CPU_HALTED) {
+		this_cpu->cpu_status = CPU_HALTED;
+		sched_halt();
+	}
+
     struct task *next_task = NULL;
 
 	// First try from own runq
@@ -123,12 +135,14 @@ try_again:
         goto try_again;
 
 	} else if (!list_is_empty(&this_cpu->nextq)) { // If cant get lock, move from nextq
+		int moved = 0;
 		while (!list_is_empty(&this_cpu->nextq)) {
             struct list *node = list_pop_tail(&this_cpu->nextq);
             list_add(&this_cpu->runq, node);
+			moved++;
         }
 
-        this_cpu->runq_len = 0;
+        this_cpu->runq_len = moved;
         goto try_again;
 	}
 

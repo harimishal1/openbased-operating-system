@@ -213,7 +213,6 @@ void irq_handler(struct int_frame *frame)
         reschedule = true;
     }
     lapic_eoi();
-	sched_yield(); 
 }
 
 void int_dispatch(struct int_frame *frame)
